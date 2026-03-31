@@ -1,0 +1,27 @@
+{
+  "name": "MediSync-ai",
+  "version": "1.0.0",
+  "description": "A modern, interactive, and fully responsive landing page for the MediSync AI healthcare hackathon project.",
+  "main": "src/js/main.js",
+  "scripts": {
+    "build": "tailwindcss build src/css/styles.css -o dist/styles.css",
+    "watch": "tailwindcss build src/css/styles.css -o dist/styles.css --watch",
+    "start": "live-server src"
+  },
+  "keywords": [
+    "healthcare",
+    "AI",
+    "landing page",
+    "responsive",
+    "interactive"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "tailwindcss": "^2.2.19",
+    "animate.css": "^4.1.1"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.1"
+  }
+}

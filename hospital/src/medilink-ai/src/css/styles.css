@@ -1,0 +1,45 @@
+body {
+    @apply bg-gradient-to-r from-blue-500 to-teal-500 text-white font-sans;
+}
+
+h1, h2, h3, h4 {
+    @apply font-bold;
+}
+
+.container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.navbar {
+    @apply fixed top-0 left-0 right-0 bg-white bg-opacity-30 backdrop-blur-md shadow-lg;
+}
+
+.hero {
+    @apply flex items-center justify-center h-screen text-center;
+}
+
+.stats-section, .features-section, .how-it-works-section, .testimonials-section, .cta-section {
+    @apply py-16;
+}
+
+.card {
+    @apply bg-white bg-opacity-60 rounded-lg shadow-lg p-6 transition-transform transform hover:scale-105;
+}
+
+.button {
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300;
+}
+
+.footer {
+    @apply bg-gray-800 text-white py-6 text-center;
+}
+
+.glass-effect {
+    @apply bg-white bg-opacity-20 backdrop-blur-md border border-white border-opacity-30 rounded-lg;
+}
+
+@media (max-width: 640px) {
+    .hero {
+        @apply h-64;
+    }
+}

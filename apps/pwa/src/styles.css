@@ -1,0 +1,406 @@
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap");
+
+:root {
+  --ink: #0d1f2d;
+  --bg: #f5f7f8;
+  --card: #ffffff;
+  --accent: #ff5a36;
+  --accent-2: #0ca678;
+  --muted: #6f7e89;
+  --line: #dce3e7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Sora", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(70rem 24rem at 15% -8%, #d9f6ee 10%, transparent 60%),
+    radial-gradient(70rem 24rem at 85% -10%, #ffe6de 10%, transparent 60%),
+    var(--bg);
+}
+
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1rem 1rem 2.25rem;
+}
+
+.hero {
+  padding: 1.2rem 0.2rem;
+}
+
+.brand {
+  display: inline-block;
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin: 0;
+  color: #0f5d47;
+}
+
+h1 {
+  margin: 0.3rem 0;
+  font-size: clamp(1.8rem, 2.8vw, 2.6rem);
+  line-height: 1.1;
+}
+
+.sub {
+  margin: 0;
+  color: var(--muted);
+}
+
+.meta-row {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.chip.online {
+  background: #ddf8ef;
+  color: #0f6b4e;
+}
+
+.chip.offline {
+  background: #ffe6e6;
+  color: #a62727;
+}
+
+.chip.neutral {
+  background: #ecf1f4;
+  color: #234050;
+}
+
+.install-btn {
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(115deg, #0a7f5f, #10ad7f);
+  color: white;
+  font-weight: 700;
+  padding: 0.45rem 0.9rem;
+}
+
+.actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.actions-row.left {
+  justify-content: flex-start;
+}
+
+.primary,
+.ghost {
+  border-radius: 0.75rem;
+  padding: 0.58rem 0.84rem;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.primary {
+  border: 0;
+  background: linear-gradient(118deg, #0f6b4e, #1b9f77);
+  color: #fff;
+}
+
+.ghost {
+  border: 1px solid #c7d5de;
+  background: #f6f9fb;
+  color: #274353;
+}
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 1rem;
+  margin-top: 0.8rem;
+  background: var(--card);
+  box-shadow: 0 10px 30px rgba(13, 31, 45, 0.05);
+}
+
+h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.symptoms-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.patient-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+}
+
+.patient-list.compact {
+  grid-template-columns: 1fr;
+}
+
+.patient-item {
+  border: 1px solid #d3dde2;
+  border-radius: 0.8rem;
+  padding: 0.55rem 0.65rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9fcfd;
+  font-size: 0.85rem;
+}
+
+.link-btn {
+  border: 0;
+  background: transparent;
+  color: #8f2f17;
+  font-weight: 700;
+}
+
+.symptom {
+  border: 1px solid #ccd8de;
+  background: #f8fbfc;
+  color: #173041;
+  font-size: 0.94rem;
+  padding: 0.85rem 0.7rem;
+  border-radius: 0.9rem;
+  font-weight: 600;
+}
+
+.symptom.active {
+  border-color: transparent;
+  color: white;
+  background: linear-gradient(125deg, #ff5a36, #ff7f45);
+}
+
+.input-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.36rem;
+  font-size: 0.85rem;
+  color: #486070;
+}
+
+input,
+select {
+  border: 1px solid #cbd8de;
+  border-radius: 0.75rem;
+  padding: 0.62rem 0.72rem;
+  font: inherit;
+  background: #fcfefe;
+}
+
+.location-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.6rem;
+}
+
+.secondary {
+  border: 1px solid #b8cac2;
+  background: #ebf8f4;
+  color: #0b5a42;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  padding: 0.62rem 0.8rem;
+}
+
+.warn {
+  margin: 0.55rem 0 0;
+  color: #9d2d2d;
+  font-size: 0.84rem;
+}
+
+.submit-strip {
+  margin-top: 0.95rem;
+}
+
+.sos-btn {
+  width: 100%;
+  border: 0;
+  border-radius: 1rem;
+  min-height: 3.2rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  background: linear-gradient(120deg, #f1492a, #ff6c3f 60%, #ff9359);
+  color: white;
+  box-shadow: 0 16px 28px rgba(241, 73, 42, 0.28);
+}
+
+.sos-btn:disabled {
+  opacity: 0.65;
+}
+
+.submit-message {
+  margin: 0.55rem 0 0;
+  color: #324653;
+  font-size: 0.88rem;
+}
+
+.request-id {
+  margin: 0;
+  color: #5d7280;
+  font-size: 0.86rem;
+}
+
+.status-pill {
+  display: inline-block;
+  margin: 0.55rem 0;
+  border-radius: 999px;
+  padding: 0.33rem 0.72rem;
+  background: #edf4ff;
+  color: #14497b;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.history-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.6rem;
+}
+
+.history-chip {
+  border: 1px solid #cfdae2;
+  background: #f6f9fb;
+  color: #2b4454;
+  border-radius: 999px;
+  padding: 0.3rem 0.66rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.history-chip.active {
+  border-color: transparent;
+  background: linear-gradient(120deg, #0f6b4e, #179f77);
+  color: white;
+}
+
+.steps {
+  list-style: none;
+  padding: 0;
+  margin: 0.2rem 0 0.8rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.steps li {
+  border-radius: 0.72rem;
+  padding: 0.54rem 0.68rem;
+  font-size: 0.88rem;
+  border: 1px solid #d6e0e5;
+}
+
+.steps li.done {
+  background: #e2f7f0;
+  color: #0b6147;
+  border-color: #bee7da;
+}
+
+.steps li.active {
+  background: #fff5ef;
+  color: #9b3d12;
+  border-color: #ffd7c5;
+}
+
+.steps li.idle {
+  background: #f8fbfc;
+  color: #5a6f7d;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem 1rem;
+}
+
+.status-grid p {
+  margin: 0;
+  font-size: 0.87rem;
+  color: #264252;
+}
+
+.muted {
+  margin: 0;
+  color: #617583;
+}
+
+.live-video {
+  width: 100%;
+  margin-top: 0.8rem;
+  border-radius: 0.9rem;
+  border: 1px solid #d6e1e7;
+  background: #0e1d29;
+  min-height: 180px;
+}
+
+.guidance-card {
+  margin-top: 0.8rem;
+  border: 1px solid #cbe5db;
+  background: #ecfaf4;
+  border-radius: 0.9rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.guidance-card h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.95rem;
+}
+
+.guidance-card p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #204252;
+  line-height: 1.45;
+}
+
+.guidance-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #204252;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 740px) {
+  .page {
+    padding: 0.8rem 0.78rem 1.4rem;
+  }
+
+  .input-grid,
+  .patient-list,
+  .symptoms-grid,
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .location-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1100" viewBox="0 0 1800 1100">
+  <defs>
+    <style>
+      .title { font: 700 30px 'Segoe UI', Arial, sans-serif; fill: #112233; }
+      .subtitle { font: 500 16px 'Segoe UI', Arial, sans-serif; fill: #334455; }
+      .person { fill: #fff7e6; stroke: #d38b00; stroke-width: 2; }
+      .sys { fill: #f3f8ff; stroke: #4a7ecf; stroke-width: 2; }
+      .container { fill: #ffffff; stroke: #7396d8; stroke-width: 1.8; }
+      .component { fill: #f9fbff; stroke: #9db5e6; stroke-width: 1.4; }
+      .database { fill: #eef9f2; stroke: #49a36a; stroke-width: 1.8; }
+      .label { font: 600 14px 'Segoe UI', Arial, sans-serif; fill: #1f2d3d; }
+      .small { font: 500 12px 'Segoe UI', Arial, sans-serif; fill: #314559; }
+      .line { stroke: #52606d; stroke-width: 1.7; fill: none; marker-end: url(#arrow); }
+      .line-dashed { stroke: #52606d; stroke-width: 1.7; fill: none; stroke-dasharray: 7 5; marker-end: url(#arrow); }
+      .line-label { font: 500 11px 'Segoe UI', Arial, sans-serif; fill: #4b5b6b; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#52606d" />
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1800" height="1100" fill="#fbfdff" />
+  <text x="40" y="55" class="title">MediSync One-Page C4-Style Architecture</text>
+  <text x="40" y="82" class="subtitle">Context + Containers + Backend Components</text>
+
+  <!-- People -->
+  <rect x="40" y="130" rx="12" ry="12" width="220" height="90" class="person" />
+  <text x="60" y="165" class="label">Public Requester</text>
+  <text x="60" y="188" class="small">Creates SOS requests</text>
+
+  <rect x="40" y="250" rx="12" ry="12" width="220" height="90" class="person" />
+  <text x="60" y="285" class="label">Admin / Super Admin</text>
+  <text x="60" y="308" class="small">Governance and KPIs</text>
+
+  <rect x="40" y="370" rx="12" ry="12" width="220" height="100" class="person" />
+  <text x="60" y="405" class="label">Hospital Staff</text>
+  <text x="60" y="428" class="small">Dispatch, doctor, nurse,</text>
+  <text x="60" y="446" class="small">hospital admin staff</text>
+
+  <!-- System boundary -->
+  <rect x="300" y="110" rx="14" ry="14" width="1460" height="930" class="sys" />
+  <text x="320" y="145" class="label">Real-Time Healthcare Coordination Platform (MediSync)</text>
+
+  <!-- Frontend containers -->
+  <rect x="330" y="180" rx="12" ry="12" width="450" height="370" class="container" />
+  <text x="350" y="210" class="label">Frontend Containers</text>
+
+  <rect x="355" y="235" rx="10" ry="10" width="400" height="90" class="component" />
+  <text x="375" y="265" class="label">Admin Dashboard Web</text>
+  <text x="375" y="287" class="small">Vite + React</text>
+
+  <rect x="355" y="340" rx="10" ry="10" width="400" height="90" class="component" />
+  <text x="375" y="370" class="label">Hospital HMS Web</text>
+  <text x="375" y="392" class="small">Vite + React</text>
+
+  <rect x="355" y="445" rx="10" ry="10" width="400" height="90" class="component" />
+  <text x="375" y="475" class="label">Public and Legacy Web</text>
+  <text x="375" y="497" class="small">React CRA</text>
+
+  <!-- Backend container -->
+  <rect x="810" y="180" rx="12" ry="12" width="560" height="650" class="container" />
+  <text x="830" y="210" class="label">Backend Container: Express API</text>
+
+  <rect x="835" y="235" rx="9" ry="9" width="510" height="72" class="component" />
+  <text x="855" y="262" class="label">API Routes</text>
+  <text x="855" y="282" class="small">/auth /emergency /hospital /operations /admin /ambulance /events</text>
+
+  <rect x="835" y="320" rx="9" ry="9" width="510" height="58" class="component" />
+  <text x="855" y="355" class="label">Middleware: authz, validation, request-id, error handler</text>
+
+  <rect x="835" y="390" rx="9" ry="9" width="510" height="58" class="component" />
+  <text x="855" y="425" class="label">Controllers: HTTP orchestration</text>
+
+  <rect x="835" y="460" rx="9" ry="9" width="245" height="85" class="component" />
+  <text x="855" y="490" class="label">Emergency Service</text>
+  <text x="855" y="510" class="small">Workflow + retries</text>
+  <text x="855" y="528" class="small">status transitions</text>
+
+  <rect x="1100" y="460" rx="9" ry="9" width="245" height="85" class="component" />
+  <text x="1120" y="490" class="label">Allocation Service</text>
+  <text x="1120" y="510" class="small">Scoring + reservation</text>
+  <text x="1120" y="528" class="small">decision timers</text>
+
+  <rect x="835" y="560" rx="9" ry="9" width="160" height="70" class="component" />
+  <text x="852" y="590" class="label">Auth/Token</text>
+  <text x="862" y="610" class="small">OTP/SMS</text>
+
+  <rect x="1005" y="560" rx="9" ry="9" width="160" height="70" class="component" />
+  <text x="1026" y="590" class="label">Triage</text>
+  <text x="1019" y="610" class="small">Priority floor</text>
+
+  <rect x="1175" y="560" rx="9" ry="9" width="170" height="70" class="component" />
+  <text x="1192" y="590" class="label">Ambulance</text>
+  <text x="1188" y="610" class="small">ETA + navigation</text>
+
+  <rect x="835" y="645" rx="9" ry="9" width="245" height="75" class="component" />
+  <text x="855" y="675" class="label">Realtime Event Bus</text>
+  <text x="855" y="695" class="small">SSE publisher + DB bridge</text>
+
+  <rect x="1100" y="645" rx="9" ry="9" width="245" height="75" class="component" />
+  <text x="1120" y="675" class="label">Repositories</text>
+  <text x="1120" y="695" class="small">Supabase data access</text>
+
+  <!-- Data container -->
+  <rect x="1395" y="180" rx="12" ry="12" width="340" height="650" class="database" />
+  <text x="1415" y="210" class="label">Data Container</text>
+  <text x="1415" y="230" class="small">Supabase PostgreSQL + PostGIS</text>
+
+  <rect x="1420" y="255" rx="10" ry="10" width="290" height="185" class="component" />
+  <text x="1440" y="285" class="label">Core Domain Tables</text>
+  <text x="1440" y="307" class="small">cities, hospitals, profiles</text>
+  <text x="1440" y="327" class="small">emergency_requests</text>
+  <text x="1440" y="347" class="small">request_attempts</text>
+  <text x="1440" y="367" class="small">resource_inventory, reservations</text>
+  <text x="1440" y="387" class="small">ambulances</text>
+
+  <rect x="1420" y="455" rx="10" ry="10" width="290" height="190" class="component" />
+  <text x="1440" y="485" class="label">HMS Operations Tables</text>
+  <text x="1440" y="507" class="small">doctors, doctor_shifts</text>
+  <text x="1440" y="527" class="small">room_allotments, lab_samples</text>
+  <text x="1440" y="547" class="small">ot_schedules, ot_consumables</text>
+  <text x="1440" y="567" class="small">pharmacy_inventory, issues</text>
+  <text x="1440" y="587" class="small">insurance_claims, billing tables</text>
+
+  <rect x="1420" y="660" rx="10" ry="10" width="290" height="70" class="component" />
+  <text x="1440" y="690" class="label">allocation_events</text>
+  <text x="1440" y="710" class="small">Event stream persistence</text>
+
+  <!-- Relationship lines: people to FE -->
+  <path d="M260 175 L355 270" class="line" />
+  <text x="275" y="210" class="line-label">uses</text>
+
+  <path d="M260 295 L355 280" class="line" />
+  <text x="272" y="278" class="line-label">uses</text>
+
+  <path d="M260 420 L355 385" class="line" />
+  <text x="278" y="390" class="line-label">uses</text>
+
+  <!-- FE to API -->
+  <path d="M755 280 L835 270" class="line" />
+  <text x="767" y="262" class="line-label">REST /api/v1</text>
+
+  <path d="M755 385 L835 270" class="line" />
+  <text x="760" y="334" class="line-label">REST /api/v1</text>
+
+  <path d="M755 490 L835 270" class="line" />
+  <text x="762" y="430" class="line-label">REST /api/v1</text>
+
+  <!-- SSE -->
+  <path d="M755 282 C820 282, 760 680, 835 680" class="line-dashed" />
+  <text x="776" y="520" class="line-label">SSE /events</text>
+
+  <path d="M755 385 C830 385, 770 680, 835 680" class="line-dashed" />
+  <text x="780" y="592" class="line-label">SSE /events</text>
+
+  <!-- Backend internals -->
+  <path d="M1090 307 L1090 320" class="line" />
+  <path d="M1090 378 L1090 390" class="line" />
+
+  <path d="M930 448 L930 460" class="line" />
+  <path d="M1220 448 L1220 460" class="line" />
+
+  <path d="M960 545 L960 560" class="line" />
+  <path d="M1085 545 L1085 560" class="line" />
+  <path d="M1255 545 L1255 560" class="line" />
+
+  <path d="M930 545 L930 645" class="line" />
+  <path d="M1220 545 L1220 645" class="line" />
+  <path d="M960 682 L1100 682" class="line" />
+
+  <!-- Backend to data -->
+  <path d="M1345 680 L1420 680" class="line" />
+  <text x="1350" y="670" class="line-label">read/write events</text>
+
+  <path d="M1345 690 C1380 690, 1385 350, 1420 350" class="line" />
+  <text x="1350" y="505" class="line-label">query/update core data</text>
+
+  <path d="M1345 700 C1380 700, 1385 550, 1420 550" class="line" />
+  <text x="1350" y="620" class="line-label">query/update ops data</text>
+
+  <!-- Footnotes -->
+  <text x="40" y="1035" class="small">Scope note: Single-city rollout (Indore) with multi-city-ready data model.</text>
+  <text x="40" y="1055" class="small">Auth is currently phase-1 mock/stub credentials at service layer; workflow and state persist in Supabase.</text>
+</svg>

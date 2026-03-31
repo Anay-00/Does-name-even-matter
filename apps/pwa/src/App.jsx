@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createEmergencyRequest, getEmergencyStatus } from "./lib/api";
+import { createEventStream } from "./lib/realtime";
 import {
   loadActiveRequest,
   loadAuthSession,
@@ -143,6 +144,7 @@ export default function App() {
     error: ""
   });
   const [installPrompt, setInstallPrompt] = useState(null);
+  const [sseConnected, setSseConnected] = useState(false);
   const [guidanceState, setGuidanceState] = useState({
     recording: false,
     processing: false,
@@ -281,10 +283,62 @@ export default function App() {
     setGuidanceState((prev) => ({ ...prev, message: "", suggestions: [] }));
   }, [activeRequest?.id]);
 
+  // ── Primary: SSE for instant push updates ────────────────────────────
   useEffect(() => {
     if (!trackedRequestId) {
       return;
     }
+
+    const dispose = createEventStream([trackedRequestId], {
+      onEvent(event) {
+        const rid = event?.payload?.requestId;
+        if (!rid) {
+          return;
+        }
+
+        // Strip bus-internal keys before merging into request state.
+        const { requestId: _rid, eventKey: _ek, ...updateData } = event.payload;
+
+        // Instant UI update from SSE payload.
+        setActiveRequest((prev) => {
+          if (prev?.id !== rid) {
+            return prev;
+          }
+          return { ...prev, ...updateData };
+        });
+
+        setRequestHistory((prev) =>
+          prev.map((item) => (item.id === rid ? { ...item, ...updateData } : item))
+        );
+
+        // Background full hydration so all fields (e.g. hospital name) are complete.
+        getEmergencyStatus(rid)
+          .then((full) => {
+            if (full?.id) {
+              upsertRequest(full, false);
+            }
+          })
+          .catch(() => {});
+      },
+      onOpen() {
+        setSseConnected(true);
+      },
+      onError() {
+        setSseConnected(false);
+      }
+    });
+
+    return dispose;
+  }, [trackedRequestId]);
+
+  // ── Fallback: Slow poll when SSE is down or for background requests ──
+  useEffect(() => {
+    if (!trackedRequestId) {
+      return;
+    }
+
+    // When SSE is connected we only need a very infrequent safety-net poll.
+    const pollMs = sseConnected ? 30_000 : 10_000;
 
     const interval = setInterval(async () => {
       try {
@@ -293,7 +347,8 @@ export default function App() {
           ...requestHistory
             .filter((item) => !isTerminal(item.status))
             .map((item) => item.id)
-        ].filter((value, index, list) => value && list.indexOf(value) === index)
+        ]
+          .filter((value, index, list) => value && list.indexOf(value) === index)
           .slice(0, 5);
 
         const updates = await Promise.all(
@@ -312,10 +367,10 @@ export default function App() {
       } catch {
         // Keep old state and retry on next poll.
       }
-    }, 1800);
+    }, pollMs);
 
     return () => clearInterval(interval);
-  }, [trackedRequestId, requestHistory]);
+  }, [trackedRequestId, sseConnected]);
 
   useEffect(() => {
     if (!trackedRequestId || activeRequest?.id === trackedRequestId) {

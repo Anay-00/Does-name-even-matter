@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:http://8080//api/v1";
 
 async function parseJsonSafe(response) {
   const text = await response.text();
@@ -73,7 +73,7 @@ function isPendingActionable(status) {
 }
 
 function isUnresolvedStatus(status) {
-  return ["created", "pending_hospital_response", "rejected_retrying"].includes(status);
+  return ["created", "pending_hospital_response", "rejected_retrying", "failed_no_match"].includes(status);
 }
 
 const menuGroups = [

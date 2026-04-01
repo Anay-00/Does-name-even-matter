@@ -1,14 +1,15 @@
-import puppeteer from "puppeteer";
-
 /**
  * Generate a multi-page PDF analytics report from processed data.
  * Uses Puppeteer to render an HTML page with Chart.js charts, then
  * converts it to a paginated PDF.
  */
 export async function generatePdf(data) {
+  const puppeteer = await import("puppeteer").catch(() => null);
+  if (!puppeteer) throw new Error("puppeteer is not installed — run: npm install puppeteer");
+
   const html = buildPdfHtml(data);
 
-  const browser = await puppeteer.launch({
+  const browser = await puppeteer.default.launch({
     headless: "new",
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"],
   });

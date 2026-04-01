@@ -2,8 +2,6 @@
 
 # MediSync OPD
 ### Hospital Queue & Analytics Management System
-
-![Brand Color](https://img.shields.io/badge/accent-%23e8523f-e8523f?style=flat-square)
 ![Stack](https://img.shields.io/badge/stack-React%2018%20%2B%20Node.js%20%2B%20Supabase-blue?style=flat-square)
 ![Real-time](https://img.shields.io/badge/realtime-Socket.IO-black?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)

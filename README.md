@@ -226,49 +226,6 @@ The PDF always matches what the screen shows — same rendering engine, same dat
 
 ---
 
-## 5. Monorepo Structure
-
-```
-.
-├── apps/
-│   ├── opd/                     ← Main OPD app (this system)
-│   │   ├── src/                 ← React frontend (Vite, port 5181)
-│   │   │   ├── pages/
-│   │   │   │   ├── ReceptionPage.jsx
-│   │   │   │   ├── DoctorPage.jsx
-│   │   │   │   ├── DisplayPage.jsx
-│   │   │   │   └── DashboardPage.jsx
-│   │   │   ├── components/
-│   │   │   │   └── Prism.jsx    ← WebGL GLSL login screen
-│   │   │   └── lib/
-│   │   │       └── socket.js
-│   │   └── server/              ← Node.js/Express OPD server (port 3900)
-│   │       ├── index.js
-│   │       ├── opdRoutes.js
-│   │       ├── opdService.js
-│   │       ├── opdRepository.js
-│   │       ├── analyticsRoutes.js
-│   │       ├── analyticsService.js
-│   │       ├── analyticsRepository.js
-│   │       ├── pdfGenerator.js
-│   │       ├── socketManager.js
-│   │       ├── notificationService.js
-│   │       └── eventBus.js
-│   ├── pwa/                     ← PWA patient-facing app
-│   ├── hospital-hms-web/        ← HMS web portal
-│   └── admin-dashboard-web/     ← Admin dashboard
-├── backend/                     ← Main platform backend (port 8080)
-│   └── src/
-│       ├── server.js
-│       ├── controllers/
-│       ├── services/
-│       ├── repositories/
-│       └── routes/
-└── hospital/                    ← Hospital portal (CRA)
-```
-
----
-
 ## 6. Getting Started
 
 ### Prerequisites

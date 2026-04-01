@@ -20,11 +20,10 @@
 4. [Core Features](#4-core-features)
    - [Queue & Role Management](#41-queue--role-management)
    - [Analytics & Display](#42-analytics--display)
-5. [Monorepo Structure](#5-monorepo-structure)
-6. [Getting Started](#6-getting-started)
-7. [Impact & Real-World Benefits](#7-impact--real-world-benefits)
-8. [Unique Implementation Details](#8-unique-implementation-details)
-9. [Future Scope](#9-future-scope)
+5. [Getting Started](#6-getting-started)
+6. [Impact & Real-World Benefits](#7-impact--real-world-benefits)
+7. [Unique Implementation Details](#8-unique-implementation-details)
+8. [Future Scope](#9-future-scope)
 
 ---
 
@@ -226,7 +225,7 @@ The PDF always matches what the screen shows — same rendering engine, same dat
 
 ---
 
-## 6. Getting Started
+## 5. Getting Started
 
 ### Prerequisites
 
@@ -266,7 +265,7 @@ PORT=3900
 
 ---
 
-## 7. Impact & Real-World Benefits
+## 6. Impact & Real-World Benefits
 
 | Before | After |
 |---|---|
@@ -282,7 +281,7 @@ PORT=3900
 
 ---
 
-## 8. Unique Implementation Details
+## 7. Unique Implementation Details
 
 ### Shared Analytics Pipeline
 
@@ -325,7 +324,7 @@ Every time a doctor marks a consultation complete, the server recalculates ETAs 
 
 ---
 
-## 9. Future Scope
+## 8. Future Scope
 
 | Feature | Description |
 |---|---|

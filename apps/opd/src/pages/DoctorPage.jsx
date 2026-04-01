@@ -96,54 +96,92 @@ export default function DoctorPage({ auth, onLogout }) {
   const totalToday = panel?.totalToday || 0;
   const avgMin = panel?.avgConsultationMinutes || 10;
 
+  const initials = (doctorName || "DR").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+
   return (
-    <>
-      {/* ── Navbar ──────────────────────────────────────────────── */}
-      <nav className="navbar">
-        <div className="navbar-brand">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          MediSync OPD
+    <div className="app-layout">
+      {/* ── Sidebar ─────────────────────────────────────────── */}
+      <aside className="sidebar">
+        <div className="sidebar-brand">
+          <h1><span>MediSync</span><span>OPD</span></h1>
         </div>
-        <div className="navbar-info">
-          <span className="navbar-hospital">{hospitalName}</span>
-          <span>{doctorName}</span>
-          <button className="btn btn-outline btn-sm" onClick={onLogout}>Logout</button>
-        </div>
-      </nav>
-
-      <div className="page-container">
-        {/* ── Doctor identity card ─────────────────────────────── */}
-        <div className="doctor-identity">
-          <div className="doctor-identity-left">
-            <div className="doctor-identity-icon">{SYMPTOM_ICONS[departmentCode] || "🩺"}</div>
-            <div>
-              <div className="doctor-identity-name">{doctorName}</div>
-              <div className="doctor-identity-dept">{departmentName} &middot; Room {roomNumber}</div>
-            </div>
-          </div>
-          <div className="doctor-identity-stats">
-            <div className="doctor-stat">
-              <span className="doctor-stat-value" style={{ color: "var(--warning)" }}>{waitingQueue.length}</span>
-              <span className="doctor-stat-label">Waiting</span>
-            </div>
-            <div className="doctor-stat">
-              <span className="doctor-stat-value" style={{ color: "var(--success)" }}>{currentPatient ? 1 : 0}</span>
-              <span className="doctor-stat-label">Current</span>
-            </div>
-            <div className="doctor-stat">
-              <span className="doctor-stat-value" style={{ color: "#666" }}>{completedCount}</span>
-              <span className="doctor-stat-label">Done</span>
-            </div>
-            <div className="doctor-stat">
-              <span className="doctor-stat-value" style={{ color: "var(--purple, #7c3aed)" }}>{avgMin}<small> min</small></span>
-              <span className="doctor-stat-label">Avg</span>
-            </div>
+        <div className="sidebar-user">
+          <div className="sidebar-avatar" style={{ background: "var(--success)" }}>{initials}</div>
+          <div className="sidebar-user-info">
+            <div className="sidebar-user-name">{doctorName}</div>
+            <div className="sidebar-user-role">{departmentName} · Room {roomNumber}</div>
           </div>
         </div>
+        <nav className="sidebar-nav">
+          <div className="sidebar-section">
+            <div className="sidebar-section-title">Consultation</div>
+            <button className="sidebar-link active">
+              <span className="link-icon">🩺</span> My Panel
+            </button>
+            <a className="sidebar-link" href="/dashboard">
+              <span className="link-icon">📊</span> Analytics Dashboard
+            </a>
+            <a className="sidebar-link" href="/display">
+              <span className="link-icon">📺</span> Display Board
+            </a>
+          </div>
+          <div className="sidebar-section">
+            <div className="sidebar-section-title">Quick Actions</div>
+            <button className="sidebar-link" onClick={fetchPanel}>
+              <span className="link-icon">🔄</span> Refresh Queue
+            </button>
+          </div>
+        </nav>
+        <div className="sidebar-footer">
+          <button className="btn btn-outline w-full" onClick={onLogout}>Logout</button>
+        </div>
+      </aside>
 
-        {error && <div className="alert alert-error">{error}</div>}
+      {/* ── Main ────────────────────────────────────────────── */}
+      <div className="main-content">
+        <div className="topbar">
+          <div className="topbar-left">
+            <div className="topbar-title">Doctor Panel</div>
+            <div className="topbar-breadcrumb">Consultation / {departmentName}</div>
+          </div>
+          <div className="topbar-right">
+            <div className="topbar-status">
+              <span className="pulse-dot"></span>
+              Live Queue
+            </div>
+            <div className="topbar-badge">{waitingQueue.length}</div>
+            <div className="topbar-hospital-tag">{hospitalName}</div>
+          </div>
+        </div>
 
-        <div className="page-grid">
+        <div className="page-container">
+          {/* Stats bar */}
+          <div className="stats-grid">
+            <div className="stat-card purple">
+              <div className="stat-card-label">Total Patients</div>
+              <div className="stat-value">{totalToday}</div>
+              <div className="stat-sublabel">Assigned today</div>
+            </div>
+            <div className="stat-card blue">
+              <div className="stat-card-label">Waiting</div>
+              <div className="stat-value">{waitingQueue.length}</div>
+              <div className="stat-sublabel">In queue</div>
+            </div>
+            <div className="stat-card green">
+              <div className="stat-card-label">Completed</div>
+              <div className="stat-value">{completedCount}</div>
+              <div className="stat-sublabel">Consultations done</div>
+            </div>
+            <div className="stat-card teal">
+              <div className="stat-card-label">Avg Time</div>
+              <div className="stat-value">{avgMin}<small style={{fontSize:14}}> min</small></div>
+              <div className="stat-sublabel">Per consultation</div>
+            </div>
+          </div>
+
+          {error && <div className="alert alert-error">{error}</div>}
+
+          <div className="page-grid">
           {/* ── Left: Current Patient ──────────────────────────── */}
           <div>
             {currentPatient ? (
@@ -253,6 +291,7 @@ export default function DoctorPage({ auth, onLogout }) {
           </div>
         </div>
       </div>
-    </>
+    </div>
+    </div>
   );
 }

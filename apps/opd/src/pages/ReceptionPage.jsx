@@ -102,30 +102,90 @@ export default function ReceptionPage({ auth, onLogout }) {
     return true;
   });
 
+  const initials = (auth.user.hospitalName || "MH").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+
   return (
-    <>
-      <nav className="navbar">
-        <div className="navbar-brand">
-          <span className="navbar-logo">⚕</span> MediSync OPD
+    <div className="app-layout">
+      {/* ── Sidebar ─────────────────────────────────────────── */}
+      <aside className="sidebar">
+        <div className="sidebar-brand">
+          <h1><span>MediSync</span><span>OPD</span></h1>
         </div>
-        <div className="navbar-info">
-          <span className="navbar-hospital">{auth.user.hospitalName}</span>
-          <span className="navbar-role">Reception</span>
-          <button className="btn btn-outline btn-sm" onClick={onLogout}>Logout</button>
+        <div className="sidebar-user">
+          <div className="sidebar-avatar">{initials}</div>
+          <div className="sidebar-user-info">
+            <div className="sidebar-user-name">{auth.user.hospitalName || "Hospital"}</div>
+            <div className="sidebar-user-role">Reception Desk</div>
+          </div>
         </div>
-      </nav>
+        <nav className="sidebar-nav">
+          <div className="sidebar-section">
+            <div className="sidebar-section-title">Queue Management</div>
+            <button className="sidebar-link active">
+              <span className="link-icon">📋</span> Register Patient
+            </button>
+            <a className="sidebar-link" href="/dashboard">
+              <span className="link-icon">📊</span> Analytics Dashboard
+            </a>
+            <a className="sidebar-link" href="/display">
+              <span className="link-icon">📺</span> Display Board
+            </a>
+          </div>
+          <div className="sidebar-section">
+            <div className="sidebar-section-title">Information</div>
+            <button className="sidebar-link" onClick={fetchPanel}>
+              <span className="link-icon">🔄</span> Refresh Data
+            </button>
+          </div>
+        </nav>
+        <div className="sidebar-footer">
+          <button className="btn btn-outline w-full" onClick={onLogout}>Logout</button>
+        </div>
+      </aside>
 
-      <div className="page-container">
-        {/* Stats bar */}
-        <div className="stats-grid">
-          <div className="stat-card"><div className="stat-value text-primary">{stats.total || 0}</div><div className="stat-label">Total</div></div>
-          <div className="stat-card"><div className="stat-value text-warning">{stats.waiting || 0}</div><div className="stat-label">Waiting</div></div>
-          <div className="stat-card"><div className="stat-value text-success">{stats.inConsultation || 0}</div><div className="stat-label">In Consult</div></div>
-          <div className="stat-card"><div className="stat-value text-muted">{stats.completed || 0}</div><div className="stat-label">Done</div></div>
-          <div className="stat-card"><div className="stat-value text-danger">{stats.cancelled || 0}</div><div className="stat-label">Cancelled</div></div>
+      {/* ── Main ────────────────────────────────────────────── */}
+      <div className="main-content">
+        <div className="topbar">
+          <div className="topbar-left">
+            <div className="topbar-title">Reception Panel</div>
+            <div className="topbar-breadcrumb">Queue Management / Register & Monitor</div>
+          </div>
+          <div className="topbar-right">
+            <div className="topbar-status">
+              <span className="pulse-dot"></span>
+              Live Queue
+            </div>
+            <div className="topbar-badge">{stats.waiting || 0}</div>
+            <div className="topbar-hospital-tag">{auth.user.hospitalName}</div>
+          </div>
         </div>
 
-        <div className="page-grid">
+        <div className="page-container">
+          {/* Stats bar */}
+          <div className="stats-grid">
+            <div className="stat-card purple">
+              <div className="stat-card-label">Total Cases</div>
+              <div className="stat-value">{stats.total || 0}</div>
+              <div className="stat-sublabel">Today's patients</div>
+            </div>
+            <div className="stat-card blue">
+              <div className="stat-card-label">Waiting</div>
+              <div className="stat-value">{stats.waiting || 0}</div>
+              <div className="stat-sublabel">In queue</div>
+            </div>
+            <div className="stat-card green">
+              <div className="stat-card-label">Completed</div>
+              <div className="stat-value">{stats.completed || 0}</div>
+              <div className="stat-sublabel">Consultations done</div>
+            </div>
+            <div className="stat-card orange">
+              <div className="stat-card-label">Cancelled</div>
+              <div className="stat-value">{stats.cancelled || 0}</div>
+              <div className="stat-sublabel">Dropped tokens</div>
+            </div>
+          </div>
+
+          <div className="page-grid">
           {/* ── Left: Issue Token ─────────────────────────────── */}
           <div>
             <div className="card">
@@ -282,6 +342,7 @@ export default function ReceptionPage({ auth, onLogout }) {
           </div>
         </div>
       </div>
-    </>
+    </div>
+    </div>
   );
 }

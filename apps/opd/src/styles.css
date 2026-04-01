@@ -1,12 +1,15 @@
 /* ═══════════════════════════════════════════════════════════════════
    MediSync OPD Queue — Global Styles
-   Medical-grade design system with Inter typeface
+   Admin Dashboard Theme — Inspired by MediSync Admin Panel
    ═══════════════════════════════════════════════════════════════════ */
 
 :root {
   --primary: #1a73e8;
   --primary-dark: #1557b0;
   --primary-light: #e8f0fe;
+  --accent: #e8523f;
+  --accent-dark: #c73e2d;
+  --accent-light: #fef0ee;
   --success: #0f9d58;
   --success-dark: #0b7a42;
   --success-light: #e6f4ea;
@@ -16,21 +19,24 @@
   --danger-light: #fce8e6;
   --purple: #7c3aed;
   --purple-light: #ede9fe;
-  --bg: #f0f4f9;
+  --bg: #eef2f7;
   --surface: #ffffff;
   --surface-alt: #f8fafc;
+  --sidebar-bg: #fafbfd;
   --text: #1f2937;
   --text-secondary: #6b7280;
   --text-muted: #9ca3af;
   --border: #e5e7eb;
   --border-light: #f3f4f6;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
-  --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.08);
   --radius: 12px;
   --radius-sm: 8px;
   --radius-xs: 6px;
+  --sidebar-width: 250px;
+  --topbar-height: 56px;
 }
 
 *, *::before, *::after {
@@ -47,7 +53,233 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Navbar ─────────────────────────────────────────────────────── */
+/* ── Sidebar ────────────────────────────────────────────────────── */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 200;
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.sidebar-brand h1 {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--accent);
+  line-height: 1.15;
+}
+
+.sidebar-brand h1 span {
+  display: block;
+}
+
+.sidebar-user {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.sidebar-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-user-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 12px 0;
+}
+
+.sidebar-section {
+  padding: 0 12px;
+  margin-bottom: 4px;
+}
+
+.sidebar-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  padding: 8px 12px 6px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: var(--radius-xs);
+  transition: all 0.12s;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
+}
+
+.sidebar-link:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.sidebar-link.active {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.sidebar-link .link-icon {
+  font-size: 16px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-light);
+}
+
+/* ── Top bar ────────────────────────────────────────────────────── */
+
+.topbar {
+  height: var(--topbar-height);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 150;
+  box-shadow: var(--shadow-sm);
+}
+
+.topbar-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.topbar-breadcrumb {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topbar-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.topbar-status .pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.topbar-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.topbar-hospital-tag {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.3px;
+}
+
+/* ── Main content area (beside sidebar) ─────────────────────────── */
+
+.main-content {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+/* ── Legacy navbar (kept for backward compat / display page) ───── */
 
 .navbar {
   background: var(--surface);
@@ -266,36 +498,69 @@ body {
   color: var(--purple);
 }
 
-/* ── Stats cards ────────────────────────────────────────────────── */
+/* ── Stats cards (colorful gradient like admin dashboard) ────────── */
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 14px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
 }
 
 .stat-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 16px;
-  text-align: center;
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
 }
 
-.stat-value {
-  font-size: 32px;
-  font-weight: 800;
-  line-height: 1;
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 50%;
+}
+
+.stat-card.purple { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); }
+.stat-card.blue   { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); }
+.stat-card.green  { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); }
+.stat-card.orange { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); }
+.stat-card.red    { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); }
+.stat-card.teal   { background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%); }
+
+.stat-card-label {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.9;
   margin-bottom: 4px;
 }
 
-.stat-label {
+.stat-value {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+  color: inherit;
+}
+
+.stat-sublabel {
   font-size: 12px;
+  opacity: 0.75;
+}
+
+.stat-label {
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  opacity: 0.9;
+  text-transform: none;
+  letter-spacing: 0;
+  color: inherit;
 }
 
 /* ── Queue table ────────────────────────────────────────────────── */
@@ -336,44 +601,133 @@ body {
 
 /* ── Login page ─────────────────────────────────────────────────── */
 
-.login-container {
+.login-page {
+  display: flex;
   min-height: 100vh;
+  background: var(--bg);
+}
+
+/* Left branding panel */
+.login-brand-panel {
+  width: 420px;
+  background: linear-gradient(160deg, var(--accent) 0%, #c73e2d 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
+  padding: 48px;
+  position: relative;
+  overflow: hidden;
 }
 
-.login-card {
+.login-brand-panel::before {
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -30%;
+  width: 600px;
+  height: 600px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 50%;
+}
+
+.login-brand-panel::after {
+  content: "";
+  position: absolute;
+  bottom: -20%;
+  left: -20%;
+  width: 400px;
+  height: 400px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 50%;
+}
+
+.login-brand-content {
+  position: relative;
+  z-index: 1;
+  color: white;
+}
+
+.login-brand-logo {
+  width: 72px;
+  height: 72px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+  backdrop-filter: blur(8px);
+}
+
+.login-brand-icon {
+  font-size: 36px;
+}
+
+.login-brand-title {
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+
+.login-brand-title span {
+  display: block;
+}
+
+.login-brand-subtitle {
+  font-size: 15px;
+  opacity: 0.85;
+  margin-bottom: 36px;
+  line-height: 1.5;
+}
+
+.login-brand-features {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.login-feature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.login-feature span {
+  font-size: 18px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.12);
+  border-radius: 10px;
+}
+
+/* Right form panel */
+.login-form-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.login-page .login-card {
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
   width: 100%;
   max-width: 560px;
   overflow: hidden;
+  border: 1px solid var(--border-light);
 }
 
-.login-header {
-  background: linear-gradient(135deg, var(--primary) 0%, #1557b0 100%);
-  padding: 32px 32px 28px;
-  text-align: center;
-  color: white;
-}
-
-.login-header h1 {
-  font-size: 24px;
-  font-weight: 800;
-  margin-bottom: 4px;
-}
-
-.login-header p {
-  font-size: 14px;
-  opacity: 0.85;
-}
-
-.login-body {
-  padding: 32px;
+.login-page .login-body {
+  padding: 36px;
 }
 
 .login-tabs {
@@ -444,7 +798,7 @@ body {
 }
 
 .login-step-title {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 800;
   color: var(--text);
   margin-bottom: 4px;
@@ -453,13 +807,13 @@ body {
 .login-step-subtitle {
   font-size: 14px;
   color: var(--text-secondary);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .back-btn {
   background: none;
   border: none;
-  color: var(--primary);
+  color: var(--accent);
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -489,58 +843,82 @@ body {
   50% { opacity: 0.5; }
 }
 
-.login-footer-link {
-  text-align: center;
-  margin-top: 20px;
-  padding-top: 16px;
+.login-quick-links {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
   border-top: 1px solid var(--border-light);
 }
 
-.login-footer-link a {
-  color: var(--primary);
+.login-quick-link {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
+  transition: all 0.15s;
 }
 
-.login-footer-link a:hover {
-  text-decoration: underline;
+.login-quick-link:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* ── Hospital grid (login) ──────────────────────────────────────── */
 
 .hospital-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-top: 12px;
 }
 
 .hospital-card {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 20px 12px;
-  background: var(--surface-alt);
-  border: 2px solid var(--border);
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s ease;
-  text-align: center;
+  text-align: left;
 }
 
 .hospital-card:hover {
-  border-color: var(--primary);
-  background: var(--primary-light);
-  transform: translateY(-2px);
+  border-color: var(--accent);
+  background: var(--accent-light);
+  transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
-.hospital-icon {
-  font-size: 28px;
-  line-height: 1;
+.hospital-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.hospital-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .hospital-name {
@@ -569,10 +947,10 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   padding: 28px 16px;
-  background: var(--surface-alt);
-  border: 2px solid var(--border);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   cursor: pointer;
   font-family: inherit;
@@ -601,9 +979,14 @@ body {
   background: var(--success-light);
 }
 
-.role-icon {
-  font-size: 36px;
-  line-height: 1;
+.role-icon-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
 }
 
 .role-title {
@@ -1024,27 +1407,46 @@ body {
 
 /* ── Responsive: login ──────────────────────────────────────────── */
 
+/* ── Responsive: login ──────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .login-page { flex-direction: column; }
+  .login-brand-panel {
+    width: 100%;
+    padding: 32px 28px;
+  }
+  .login-brand-features { display: none; }
+  .login-brand-title { font-size: 28px; }
+  .login-form-panel { padding: 24px; }
+}
+
 @media (max-width: 600px) {
-  .login-card { max-width: 100%; }
-  .hospital-grid { grid-template-columns: 1fr; }
+  .login-page .login-card { max-width: 100%; }
   .role-grid { grid-template-columns: 1fr; }
   .doctor-identity { flex-direction: column; gap: 16px; }
   .doctor-identity-stats { gap: 16px; }
+  .topbar-right { gap: 8px; }
+  .topbar-title { font-size: 16px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .login-quick-links { flex-direction: column; }
 }
 
 /* ── Page layouts ───────────────────────────────────────────────── */
 
 .page-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px 24px;
+  padding: 22px 28px;
 }
 
 .page-grid {
   display: grid;
   grid-template-columns: 380px 1fr;
-  gap: 20px;
+  gap: 22px;
   align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .sidebar { display: none; }
+  .main-content { margin-left: 0; }
 }
 
 @media (max-width: 960px) {

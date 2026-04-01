@@ -20,10 +20,10 @@
 4. [Core Features](#4-core-features)
    - [Queue & Role Management](#41-queue--role-management)
    - [Analytics & Display](#42-analytics--display)
-5. [Getting Started](#6-getting-started)
-6. [Impact & Real-World Benefits](#7-impact--real-world-benefits)
-7. [Unique Implementation Details](#8-unique-implementation-details)
-8. [Future Scope](#9-future-scope)
+5. [Getting Started](#5-getting-started)
+6. [Impact & Real-World Benefits](#6-impact--real-world-benefits)
+7. [Unique Implementation Details](#7-unique-implementation-details)
+8. [Future Scope](#8-future-scope)
 
 ---
 

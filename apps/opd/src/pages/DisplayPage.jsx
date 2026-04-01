@@ -1,13 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
-import { createOpdStream } from "../lib/sse";
-
-const FALLBACK_POLL_MS = 8000;
-
-function formatTime(date) {
-  return new Date(date).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-}
+import { io } from "socket.io-client";
 
 function formatTimer(seconds) {
   const m = Math.floor(seconds / 60);
@@ -19,7 +13,6 @@ export default function DisplayPage() {
   const { hospitalId } = useParams();
   const navigate = useNavigate();
 
-  // If no hospitalId, show selector
   if (!hospitalId) return <HospitalSelector onSelect={(id) => navigate(`/display/${id}`)} />;
   return <DisplayBoard hospitalId={hospitalId} />;
 }
@@ -53,75 +46,81 @@ function HospitalSelector({ onSelect }) {
   );
 }
 
-/* ── Display Board (the showstopper) ────────────────────────────── */
+/* ── Display Board ──────────────────────────────────────────────── */
 
 function DisplayBoard({ hospitalId }) {
-  const [queueData, setQueueData] = useState({ tokens: [], stats: { total: 0, waiting: 0, inConsultation: 0, completed: 0, avgConsultationSeconds: 300 } });
-  const [sseConnected, setSseConnected] = useState(false);
+  const [data, setData] = useState(null);
+  const [connected, setConnected] = useState(false);
   const [clock, setClock] = useState(new Date());
   const [selectedDept, setSelectedDept] = useState("all");
   const [nowServingTimer, setNowServingTimer] = useState(0);
   const timerRef = useRef(null);
+  const socketRef = useRef(null);
 
   const fetchData = useCallback(async () => {
     try {
-      const data = await api.getDisplayData(hospitalId);
-      setQueueData(data);
+      const d = await api.getDisplayData(hospitalId);
+      setData(d);
     } catch {
-      // retry silently
+      // silent
     }
   }, [hospitalId]);
 
-  // Initial fetch + poll fallback
+  // Initial fetch
   useEffect(() => {
     fetchData();
-    const timer = setInterval(fetchData, FALLBACK_POLL_MS);
-    return () => clearInterval(timer);
   }, [fetchData]);
 
-  // SSE stream
+  // Socket.IO for real-time updates (anonymous — no auth needed for display)
   useEffect(() => {
-    const close = createOpdStream(`/api/display/${hospitalId}/stream`, {
-      onEvent: () => fetchData(),
-      onOpen: () => setSseConnected(true),
-      onError: () => setSseConnected(false),
+    const socket = io("/", {
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
     });
-    return close;
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      setConnected(true);
+      socket.emit("join:hospital", hospitalId);
+    });
+    socket.on("disconnect", () => setConnected(false));
+    socket.on("queue:update", () => fetchData());
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
   }, [hospitalId, fetchData]);
 
   // Clock
   useEffect(() => {
-    const timer = setInterval(() => setClock(new Date()), 1000);
-    return () => clearInterval(timer);
+    const t = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(t);
   }, []);
 
-  // Build department list from tokens
-  const departments = [];
-  const deptMap = {};
-  for (const t of queueData.tokens) {
-    const deptId = t.department_id;
-    const deptName = t.departments?.name || "Unknown";
-    if (!deptMap[deptId]) {
-      deptMap[deptId] = deptName;
-      departments.push({ id: deptId, name: deptName });
-    }
-  }
+  // Derived data
+  const departments = data?.departments || [];
+  const doctors = data?.doctors || [];
+  const active = data?.active || [];
+  const docMap = Object.fromEntries(doctors.map((d) => [d.id, d]));
 
-  // Filter tokens by department
-  const filteredTokens = selectedDept === "all"
-    ? queueData.tokens
-    : queueData.tokens.filter((t) => t.department_id === selectedDept);
+  // Filter by department
+  const filtered = selectedDept === "all"
+    ? active
+    : active.filter((t) => t.department_id === selectedDept);
 
-  const nowServing = filteredTokens.filter((t) => t.status === "in_consultation");
-  const upcoming = filteredTokens.filter((t) => t.status === "waiting");
+  const nowServing = filtered.filter((t) => t.status === "in_consultation");
+  const upcoming = filtered.filter((t) => t.status === "waiting");
   const currentPatient = nowServing[0] || null;
-  const avgMin = Math.round((queueData.stats?.avgConsultationSeconds || 300) / 60);
 
-  // Timer for now-serving patient
+  // Timer for now-serving
   useEffect(() => {
     clearInterval(timerRef.current);
-    if (currentPatient?.called_at) {
-      const start = new Date(currentPatient.called_at).getTime();
+    const startField = currentPatient?.consultation_started_at || currentPatient?.called_at;
+    if (startField) {
+      const start = new Date(startField).getTime();
       timerRef.current = setInterval(() => {
         setNowServingTimer(Math.floor((Date.now() - start) / 1000));
       }, 1000);
@@ -130,9 +129,11 @@ function DisplayBoard({ hospitalId }) {
       setNowServingTimer(0);
     }
     return () => clearInterval(timerRef.current);
-  }, [currentPatient?.id, currentPatient?.called_at]);
+  }, [currentPatient?.id, currentPatient?.consultation_started_at, currentPatient?.called_at]);
 
-  const { stats } = queueData;
+  const totalToday = data?.totalToday || 0;
+  const completedToday = data?.completedToday || 0;
+  const waitingCount = upcoming.length;
 
   return (
     <div className="display-page">
@@ -143,9 +144,9 @@ function DisplayBoard({ hospitalId }) {
           <div className="display-subtitle">Live Patient Queue Board</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div className="sse-indicator">
-            <span className={`sse-dot ${sseConnected ? "" : "disconnected"}`} />
-            {sseConnected ? "LIVE" : "Reconnecting..."}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600 }}>
+            <span style={{ width: 10, height: 10, borderRadius: "50%", background: connected ? "#22c55e" : "#ef4444", display: "inline-block" }} />
+            {connected ? "LIVE" : "Reconnecting..."}
           </div>
           <div className="display-clock">
             {clock.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
@@ -175,17 +176,14 @@ function DisplayBoard({ hospitalId }) {
                 <span className="now-serving-pulse" />
                 Now Serving
               </div>
-              <div className="now-serving-token">
-                #{String(currentPatient.token_number).padStart(3, "0")}
-              </div>
+              <div className="now-serving-token">{currentPatient.token_number}</div>
               <div className="now-serving-name">{currentPatient.patient_name}</div>
-              <div className="now-serving-doctor">
-                {currentPatient.doctors?.full_name ? `Dr. ${currentPatient.doctors.full_name}` : ""}
+              <div className="now-serving-doctor">{currentPatient.doctor_name || ""}</div>
+              <div className="now-serving-dept">
+                {currentPatient.department_name || ""} · Room {currentPatient.doctor_room || currentPatient.room_number}
               </div>
-              <div className="now-serving-dept">{currentPatient.departments?.name || ""}</div>
               <div className="now-serving-timer">⏱ {formatTimer(nowServingTimer)}</div>
 
-              {/* Show other in-consultation tokens if multiple */}
               {nowServing.length > 1 && (
                 <div style={{ marginTop: 20, width: "100%" }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, textAlign: "center" }}>
@@ -193,9 +191,9 @@ function DisplayBoard({ hospitalId }) {
                   </div>
                   {nowServing.slice(1).map((t) => (
                     <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", background: "rgba(34,197,94,0.08)", borderRadius: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 20, fontWeight: 800, color: "#22c55e" }}>#{String(t.token_number).padStart(3, "0")}</span>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: "#22c55e" }}>{t.token_number}</span>
                       <span style={{ fontSize: 14 }}>{t.patient_name}</span>
-                      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginLeft: "auto" }}>{t.departments?.name}</span>
+                      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginLeft: "auto" }}>{t.department_name}</span>
                     </div>
                   ))}
                 </div>
@@ -219,15 +217,19 @@ function DisplayBoard({ hospitalId }) {
             </div>
           ) : (
             <ul className="upcoming-list">
-              {upcoming.map((t, idx) => (
-                <li key={t.id} className="upcoming-item">
-                  <span className="upcoming-token">#{String(t.token_number).padStart(3, "0")}</span>
-                  <span className="upcoming-name">{t.patient_name}</span>
-                  <span className="upcoming-dept">{t.departments?.name || ""}</span>
-                  <span className="upcoming-wait">~{(idx + 1) * avgMin} min</span>
-                  {t.priority === "priority" && <span className="upcoming-priority">Priority</span>}
-                </li>
-              ))}
+              {upcoming.map((t, idx) => {
+                const doc = docMap[t.doctor_id];
+                const avgMin = doc?.avg_consultation_minutes || t.doctor_avg_minutes || 10;
+                return (
+                  <li key={t.id} className="upcoming-item">
+                    <span className="upcoming-token">{t.token_number}</span>
+                    <span className="upcoming-name">{t.patient_name}</span>
+                    <span className="upcoming-dept">{t.department_name || ""} · Room {t.doctor_room || t.room_number}</span>
+                    <span className="upcoming-wait">~{Math.round(avgMin * (idx + 1))} min</span>
+                    {t.priority === "priority" && <span className="upcoming-priority">Priority</span>}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -236,20 +238,20 @@ function DisplayBoard({ hospitalId }) {
       {/* Footer stats */}
       <div className="display-footer">
         <div className="display-stat">
-          <div className="display-stat-value">{stats?.total || 0}</div>
+          <div className="display-stat-value">{totalToday}</div>
           <div className="display-stat-label">Total Today</div>
         </div>
         <div className="display-stat">
-          <div className="display-stat-value" style={{ color: "#22c55e" }}>{stats?.completed || 0}</div>
+          <div className="display-stat-value" style={{ color: "#22c55e" }}>{completedToday}</div>
           <div className="display-stat-label">Served</div>
         </div>
         <div className="display-stat">
-          <div className="display-stat-value" style={{ color: "#f4b400" }}>{stats?.waiting || 0}</div>
+          <div className="display-stat-value" style={{ color: "#f4b400" }}>{waitingCount}</div>
           <div className="display-stat-label">Waiting</div>
         </div>
         <div className="display-stat">
-          <div className="display-stat-value">{avgMin}<span style={{ fontSize: 14 }}> min</span></div>
-          <div className="display-stat-label">Avg Consultation</div>
+          <div className="display-stat-value">{nowServing.length}</div>
+          <div className="display-stat-label">In Consultation</div>
         </div>
       </div>
     </div>

@@ -2,146 +2,221 @@ import { supabase } from "./config.js";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-/* ── Lookup ─────────────────────────────────────────────────────── */
+/* ── Departments ────────────────────────────────────────────────── */
 
-export async function getHospitals() {
+export async function getDepartmentsByHospital(hospitalId) {
   const { data, error } = await supabase
-    .from("hospitals")
-    .select("id, name, code, address")
+    .from("opd_departments")
+    .select("id, code, name, symptom_label, symptom_description, is_active")
+    .eq("hospital_id", hospitalId)
     .eq("is_active", true)
-    .order("name");
+    .order("code");
   if (error) throw error;
   return data || [];
 }
 
-export async function getDepartments(hospitalId) {
+export async function getDepartmentByCode(hospitalId, code) {
   const { data, error } = await supabase
-    .from("departments")
-    .select("id, name, status")
+    .from("opd_departments")
+    .select("id, code, name, symptom_label, symptom_description")
     .eq("hospital_id", hospitalId)
-    .eq("status", "active")
-    .order("name");
-  if (error) throw error;
-  return data || [];
-}
-
-export async function getDoctors(hospitalId, departmentName) {
-  let query = supabase
-    .from("doctors")
-    .select("id, full_name, specialization, department, is_available")
-    .eq("hospital_id", hospitalId)
-    .eq("is_active", true);
-  if (departmentName) query = query.eq("department", departmentName);
-  const { data, error } = await query.order("full_name");
-  if (error) throw error;
-  return data || [];
-}
-
-/* ── Token counter ──────────────────────────────────────────────── */
-
-export async function getNextTokenNumber(hospitalId, departmentId) {
-  const { data, error } = await supabase.rpc("next_opd_token_number", {
-    p_hospital_id: hospitalId,
-    p_department_id: departmentId,
-    p_date: today(),
-  });
-  if (error) throw error;
-  return data;
-}
-
-/* ── Token CRUD ─────────────────────────────────────────────────── */
-
-const TOKEN_SELECT = "*, departments:department_id(name), doctors:doctor_id(full_name, specialization)";
-
-export async function createToken(token) {
-  const { data, error } = await supabase.from("opd_tokens").insert(token).select(TOKEN_SELECT).single();
-  if (error) throw error;
-  return data;
-}
-
-export async function getTokenById(tokenId) {
-  const { data, error } = await supabase.from("opd_tokens").select(TOKEN_SELECT).eq("id", tokenId).single();
-  if (error) throw error;
-  return data;
-}
-
-export async function updateToken(tokenId, updates) {
-  const { data, error } = await supabase
-    .from("opd_tokens")
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq("id", tokenId)
-    .select(TOKEN_SELECT)
+    .eq("code", code)
     .single();
   if (error) throw error;
   return data;
 }
 
-export async function getTokensByHospital(hospitalId, filters = {}) {
-  let query = supabase
-    .from("opd_tokens")
-    .select(TOKEN_SELECT)
+/* ── Doctors ────────────────────────────────────────────────────── */
+
+export async function getDoctorsByHospital(hospitalId) {
+  const { data, error } = await supabase
+    .from("opd_doctors")
+    .select("id, hospital_id, department_id, name, qualification, room_number, avg_consultation_minutes, total_consultations, is_active")
     .eq("hospital_id", hospitalId)
-    .eq("counter_date", filters.date || today());
-
-  if (filters.status) query = query.eq("status", filters.status);
-  if (filters.departmentId) query = query.eq("department_id", filters.departmentId);
-  if (filters.doctorId) query = query.eq("doctor_id", filters.doctorId);
-
-  const { data, error } = await query.order("token_number", { ascending: true });
+    .eq("is_active", true)
+    .order("room_number");
   if (error) throw error;
   return data || [];
 }
 
-/* ── Display (public — no auth) ─────────────────────────────────── */
+export async function getDoctorsByDepartment(departmentId) {
+  const { data, error } = await supabase
+    .from("opd_doctors")
+    .select("id, hospital_id, department_id, name, qualification, room_number, avg_consultation_minutes, total_consultations")
+    .eq("department_id", departmentId)
+    .eq("is_active", true)
+    .order("room_number");
+  if (error) throw error;
+  return data || [];
+}
 
-export async function getDisplayData(hospitalId) {
+export async function getDoctorById(doctorId) {
+  const { data, error } = await supabase
+    .from("opd_doctors")
+    .select("id, hospital_id, department_id, name, qualification, room_number, avg_consultation_minutes, total_consultations")
+    .eq("id", doctorId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateDoctorAvg(doctorId, avgMinutes, totalConsultations) {
+  const { error } = await supabase
+    .from("opd_doctors")
+    .update({ avg_consultation_minutes: avgMinutes, total_consultations: totalConsultations })
+    .eq("id", doctorId);
+  if (error) throw error;
+}
+
+/* ── Token Number (atomic via PL/pgSQL) ─────────────────────────── */
+
+export async function getNextTokenNumber(hospitalId, deptCode) {
+  const { data, error } = await supabase.rpc("next_opd_token_number", {
+    p_hospital_id: hospitalId,
+    p_dept_code: deptCode,
+  });
+  if (error) throw error;
+  return data; // e.g. "CARD-001"
+}
+
+/* ── Token CRUD ─────────────────────────────────────────────────── */
+
+export async function insertToken(token) {
   const { data, error } = await supabase
     .from("opd_tokens")
-    .select("id, token_number, patient_name, status, priority, department_id, doctor_id, issued_at, called_at, departments:department_id(name), doctors:doctor_id(full_name)")
-    .eq("hospital_id", hospitalId)
-    .eq("counter_date", today())
-    .in("status", ["waiting", "in_consultation"])
-    .order("token_number", { ascending: true });
+    .insert(token)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getTokenById(tokenId) {
+  const { data, error } = await supabase
+    .from("opd_tokens")
+    .select("*")
+    .eq("id", tokenId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateToken(tokenId, fields) {
+  const { data, error } = await supabase
+    .from("opd_tokens")
+    .update(fields)
+    .eq("id", tokenId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Ordered waiting queue for a doctor. Priority first, then FIFO.
+ */
+export async function getWaitingQueue(doctorId, date) {
+  const { data, error } = await supabase
+    .from("opd_tokens")
+    .select("*")
+    .eq("doctor_id", doctorId)
+    .eq("token_date", date || today())
+    .eq("status", "waiting")
+    .order("priority", { ascending: false }) // 'priority' sorts after 'normal'
+    .order("created_at", { ascending: true });
   if (error) throw error;
   return data || [];
 }
 
-/* ── Stats ──────────────────────────────────────────────────────── */
+export async function getCurrentConsultation(doctorId, date) {
+  const { data, error } = await supabase
+    .from("opd_tokens")
+    .select("*")
+    .eq("doctor_id", doctorId)
+    .eq("token_date", date || today())
+    .eq("status", "in_consultation")
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
 
-export async function getQueueStats(hospitalId, date) {
+export async function getDoctorTokensToday(doctorId, date) {
+  const { data, error } = await supabase
+    .from("opd_tokens")
+    .select("*")
+    .eq("doctor_id", doctorId)
+    .eq("token_date", date || today())
+    .order("priority", { ascending: false })
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getHospitalTokensToday(hospitalId, date) {
+  const { data, error } = await supabase
+    .from("opd_tokens")
+    .select("*")
+    .eq("hospital_id", hospitalId)
+    .eq("token_date", date || today())
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getRecentConsultationDurations(doctorId, limit = 20) {
+  const { data, error } = await supabase
+    .from("opd_tokens")
+    .select("consultation_duration_seconds")
+    .eq("doctor_id", doctorId)
+    .eq("status", "completed")
+    .not("consultation_duration_seconds", "is", null)
+    .order("consultation_ended_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getDailySummary(hospitalId, date) {
   const d = date || today();
   const { data, error } = await supabase
     .from("opd_tokens")
-    .select("status, consultation_duration_seconds, department_id, issued_at")
+    .select("status, doctor_id, department_id, consultation_duration_seconds, symptom_category, priority")
     .eq("hospital_id", hospitalId)
-    .eq("counter_date", d);
+    .eq("token_date", d);
   if (error) throw error;
+  return data || [];
+}
 
-  const tokens = data || [];
-  const total = tokens.length;
-  const waiting = tokens.filter((t) => t.status === "waiting").length;
-  const inConsultation = tokens.filter((t) => t.status === "in_consultation").length;
-  const completed = tokens.filter((t) => t.status === "completed").length;
-  const skipped = tokens.filter((t) => t.status === "skipped").length;
-  const cancelled = tokens.filter((t) => t.status === "cancelled").length;
+export async function cancelPendingTokens(hospitalId, date) {
+  const { data, error } = await supabase
+    .from("opd_tokens")
+    .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
+    .eq("hospital_id", hospitalId)
+    .eq("token_date", date)
+    .eq("status", "waiting")
+    .select();
+  if (error) throw error;
+  return data || [];
+}
 
-  const durations = tokens.filter((t) => t.consultation_duration_seconds > 0).map((t) => t.consultation_duration_seconds);
-  const avgConsultationSeconds = durations.length > 0
-    ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
-    : 300;
+/* ── Hospitals ──────────────────────────────────────────────────── */
 
-  // Hourly arrivals (for chart)
-  const hourlyArrivals = Array(24).fill(0);
-  for (const t of tokens) {
-    const h = new Date(t.issued_at).getHours();
-    hourlyArrivals[h]++;
-  }
+export async function getHospitalById(hospitalId) {
+  const { data, error } = await supabase
+    .from("hospitals")
+    .select("id, code, name")
+    .eq("id", hospitalId)
+    .single();
+  if (error) throw error;
+  return data;
+}
 
-  // Department distribution
-  const deptCounts = {};
-  for (const t of tokens) {
-    deptCounts[t.department_id] = (deptCounts[t.department_id] || 0) + 1;
-  }
-
-  return { total, waiting, inConsultation, completed, skipped, cancelled, avgConsultationSeconds, hourlyArrivals, deptCounts };
+export async function getActiveHospitals() {
+  const { data, error } = await supabase
+    .from("hospitals")
+    .select("id, code, name")
+    .eq("is_active", true)
+    .order("code");
+  if (error) throw error;
+  return data || [];
 }

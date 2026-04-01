@@ -1,18 +1,56 @@
-import crypto from "crypto";
-import { env, supabase } from "./config.js";
+/**
+ * Seed OPD v2 — Inserts departments + doctors for all 5 hospitals.
+ * Also renames IND-ACRO-02 → IND-AURO-02 / "Aurobindo Hospital" in hospitals table.
+ *
+ * Usage:  node apps/opd/server/scripts/seed-opd-v2.mjs
+ * Requires: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY in apps/opd/server/.env or backend/.env
+ */
 
-const ACCESS_TOKEN_TTL = 60 * 60 * 12; // 12 hours
+import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+import { createClient } from "@supabase/supabase-js";
 
-/* ── Hospitals ──────────────────────────────────────────────────── */
-const HOSPITALS = [
-  { code: "IND-AITR-01",    short: "aitri"   },
-  { code: "IND-AURO-02",    short: "auro"    },
-  { code: "IND-VIJAY-03",   short: "vijay"   },
-  { code: "IND-PALASIA-04", short: "palasia" },
-  { code: "IND-BHAWAR-05",  short: "bhawar"  },
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: resolve(__dirname, "../.env") });
+if (!process.env.SUPABASE_URL) {
+  dotenv.config({ path: resolve(__dirname, "../../../../backend/.env") });
+}
+
+const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+});
+
+/* ── Hospital rename: ACRO → AURO ─────────────────────────────── */
+async function renameAcro() {
+  const { data: existing } = await sb
+    .from("hospitals")
+    .select("id")
+    .eq("code", "IND-ACRO-02")
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await sb
+      .from("hospitals")
+      .update({ code: "IND-AURO-02", name: "Aurobindo Hospital", address: "Near Aurobindo Hospital, Sanwer Road, Indore" })
+      .eq("id", existing.id);
+    if (error) console.error("  Rename failed:", error.message);
+    else console.log("  ✓ Renamed IND-ACRO-02 → IND-AURO-02 (Aurobindo Hospital)");
+  } else {
+    console.log("  – IND-ACRO-02 not found (already renamed or missing)");
+  }
+}
+
+/* ── Departments (5 per hospital) ──────────────────────────────── */
+const DEPARTMENTS = [
+  { code: "CARD", name: "Cardiology",       symptom_label: "Chest Pain / Heart Issues",  symptom_description: "Chest pain, palpitations, shortness of breath" },
+  { code: "ORTH", name: "Orthopedics",      symptom_label: "Bone / Joint / Injury",      symptom_description: "Bone pain, fractures, sprains, joint issues, back pain" },
+  { code: "NEUR", name: "Neurology",        symptom_label: "Head / Neurological",        symptom_description: "Headache, dizziness, seizures, numbness, memory issues" },
+  { code: "PEDI", name: "Pediatrics",       symptom_label: "Child / Infant Care",        symptom_description: "Child illness, vaccination, growth concerns (0-16 yrs)" },
+  { code: "GENM", name: "General Medicine", symptom_label: "Other / General",            symptom_description: "Fever, cold, cough, infections, general checkup" },
 ];
 
-/* ── Doctor roster — 3 per specialty per hospital ───────────────── */
+/* ── Doctor roster — 3 per specialty per hospital ──────────────── */
 const DOCTOR_ROSTER = {
   "IND-AITR-01": [
     { deptCode: "CARD", name: "Dr. Rajesh Kumar",      qualification: "MD Cardiology",       room: "101" },
@@ -101,160 +139,99 @@ const DOCTOR_ROSTER = {
   ],
 };
 
-/* ── Build mock users from roster ───────────────────────────────── */
-const PASSWORD = "OPD@2026";
+async function seed() {
+  console.log("\n=== OPD v2 Seed ===\n");
 
-const receptionists = HOSPITALS.map((h) => ({
-  id: `rec_${h.short}`,
-  role: "receptionist",
-  email: `rec.${h.short}@medisync.com`,
-  password: PASSWORD,
-  hospitalCode: h.code,
-}));
+  // Step 0: Rename ACRO → AURO
+  console.log("[0] Renaming hospital...");
+  await renameAcro();
 
-const doctors = [];
-for (const h of HOSPITALS) {
-  const deptCounter = {}; // track doctor index per dept per hospital
-  for (const doc of DOCTOR_ROSTER[h.code]) {
-    const dc = doc.deptCode.toLowerCase();
-    deptCounter[dc] = (deptCounter[dc] || 0) + 1;
-    const idx = deptCounter[dc]; // 1, 2, 3
-    const suffix = idx === 1 ? "" : String(idx); // first doctor has no suffix for backward compat
-    doctors.push({
-      id: `doc_${dc}${suffix}_${h.short}`,
-      role: "doctor",
-      email: `dr.${dc}${suffix}.${h.short}@medisync.com`,
-      password: PASSWORD,
-      hospitalCode: h.code,
-      deptCode: doc.deptCode,
-      doctorName: doc.name,
-      doctorRoom: doc.room,
-    });
-  }
-}
-
-const opdUsers = [...receptionists, ...doctors];
-export { DOCTOR_ROSTER, HOSPITALS };
-
-/* ── JWT helpers (HMAC-SHA256, same scheme as main backend) ─────── */
-function signToken(payload) {
-  const iat = Math.floor(Date.now() / 1000);
-  const body = Buffer.from(
-    JSON.stringify({ ...payload, iat, exp: iat + ACCESS_TOKEN_TTL })
-  ).toString("base64url");
-  const sig = crypto
-    .createHmac("sha256", env.JWT_SECRET)
-    .update(body)
-    .digest("base64url");
-  return `${body}.${sig}`;
-}
-
-export function verifyToken(token) {
-  const [body, sig] = (token || "").split(".");
-  if (!body || !sig) return null;
-  const expected = crypto
-    .createHmac("sha256", env.JWT_SECRET)
-    .update(body)
-    .digest("base64url");
-  if (expected !== sig) return null;
-  const parsed = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
-  if (!parsed || parsed.exp < Math.floor(Date.now() / 1000)) return null;
-  return parsed;
-}
-
-/* ── Login ──────────────────────────────────────────────────────── */
-export async function login(email, password) {
-  const user = opdUsers.find(
-    (u) => u.email === email && u.password === password
-  );
-  if (!user) return null;
-
-  const { data: hospital } = await supabase
+  // Step 1: Get all active hospitals
+  console.log("\n[1] Fetching hospitals...");
+  const { data: hospitals, error: hErr } = await sb
     .from("hospitals")
-    .select("id, name, code")
-    .eq("code", user.hospitalCode)
-    .eq("is_active", true)
-    .single();
-  if (!hospital) return null;
+    .select("id, code, name")
+    .eq("is_active", true);
 
-  const tokenPayload = {
-    id: user.id,
-    role: user.role,
-    email: user.email,
-    hospitalId: hospital.id,
-    hospitalName: hospital.name,
-    hospitalCode: hospital.code,
-  };
+  if (hErr) { console.error("  Failed:", hErr.message); process.exit(1); }
+  console.log(`  Found ${hospitals.length} hospitals`);
 
-  // For doctors, attach department + doctor DB info
-  if (user.role === "doctor") {
-    const { data: dept } = await supabase
-      .from("opd_departments")
-      .select("id, code, name")
-      .eq("hospital_id", hospital.id)
-      .eq("code", user.deptCode)
-      .single();
+  const hospitalMap = Object.fromEntries(hospitals.map((h) => [h.code, h]));
 
-    // Match doctor by department + room number (unique per hospital)
-    const { data: doc } = await supabase
-      .from("opd_doctors")
-      .select("id, name, room_number")
-      .eq("department_id", dept?.id)
-      .eq("room_number", user.doctorRoom)
-      .maybeSingle();
+  let deptCount = 0;
+  let docCount = 0;
 
-    tokenPayload.departmentId = dept?.id;
-    tokenPayload.departmentCode = dept?.code;
-    tokenPayload.departmentName = dept?.name;
-    tokenPayload.doctorId = doc?.id;
-    tokenPayload.doctorName = doc?.name || user.doctorName;
-    tokenPayload.roomNumber = doc?.room_number || user.doctorRoom;
+  for (const [hospitalCode, roster] of Object.entries(DOCTOR_ROSTER)) {
+    const hospital = hospitalMap[hospitalCode];
+    if (!hospital) {
+      console.log(`  ⓧ Hospital ${hospitalCode} not found in DB — skipping`);
+      continue;
+    }
+
+    console.log(`\n[2] Seeding ${hospital.name} (${hospitalCode})...`);
+
+    for (const dept of DEPARTMENTS) {
+      // Upsert department
+      const { data: existingDept } = await sb
+        .from("opd_departments")
+        .select("id")
+        .eq("hospital_id", hospital.id)
+        .eq("code", dept.code)
+        .maybeSingle();
+
+      let deptId;
+      if (existingDept) {
+        deptId = existingDept.id;
+        console.log(`    – Dept ${dept.code} already exists`);
+      } else {
+        const { data: newDept, error: dErr } = await sb
+          .from("opd_departments")
+          .insert({
+            hospital_id: hospital.id,
+            code: dept.code,
+            name: dept.name,
+            symptom_label: dept.symptom_label,
+            symptom_description: dept.symptom_description,
+          })
+          .select("id")
+          .single();
+        if (dErr) { console.error(`    ✗ Dept ${dept.code}:`, dErr.message); continue; }
+        deptId = newDept.id;
+        deptCount++;
+        console.log(`    ✓ Dept ${dept.code} → ${dept.name}`);
+      }
+
+      // Upsert doctors for this dept
+      const deptDoctors = roster.filter((d) => d.deptCode === dept.code);
+      for (const doc of deptDoctors) {
+        const { data: existingDoc } = await sb
+          .from("opd_doctors")
+          .select("id")
+          .eq("department_id", deptId)
+          .eq("room_number", doc.room)
+          .maybeSingle();
+
+        if (existingDoc) {
+          console.log(`    – ${doc.name} (Room ${doc.room}) already exists`);
+        } else {
+          const { error: docErr } = await sb
+            .from("opd_doctors")
+            .insert({
+              hospital_id: hospital.id,
+              department_id: deptId,
+              name: doc.name,
+              qualification: doc.qualification,
+              room_number: doc.room,
+            });
+          if (docErr) { console.error(`    ✗ ${doc.name}:`, docErr.message); continue; }
+          docCount++;
+          console.log(`    ✓ ${doc.name} (${doc.qualification}) → Room ${doc.room}`);
+        }
+      }
+    }
   }
 
-  return { token: signToken(tokenPayload), user: tokenPayload };
+  console.log(`\n=== Done: ${deptCount} departments, ${docCount} doctors inserted ===\n`);
 }
 
-/* ── Express middleware ──────────────────────────────────────────── */
-export function requireAuth(req, res, next) {
-  const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
-  if (!token) return res.status(401).json({ error: "Missing token" });
-  const payload = verifyToken(token);
-  if (!payload) return res.status(401).json({ error: "Invalid or expired token" });
-  req.user = payload;
-  next();
-}
-
-export function requireRoles(...roles) {
-  return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role))
-      return res.status(403).json({ error: "Forbidden" });
-    next();
-  };
-}
-
-/* ── Public: list doctors for a hospital (login page dropdown) ──── */
-export function getLoginOptions() {
-  const options = HOSPITALS.map((h) => {
-    const deptCounter = {};
-    return {
-      code: h.code,
-      short: h.short,
-      receptionist: `rec.${h.short}@medisync.com`,
-      doctors: DOCTOR_ROSTER[h.code].map((d) => {
-        const dc = d.deptCode.toLowerCase();
-        deptCounter[dc] = (deptCounter[dc] || 0) + 1;
-        const idx = deptCounter[dc];
-        const suffix = idx === 1 ? "" : String(idx);
-        return {
-          email: `dr.${dc}${suffix}.${h.short}@medisync.com`,
-          name: d.name,
-          deptCode: d.deptCode,
-          room: d.room,
-          qualification: d.qualification,
-        };
-      }),
-    };
-  });
-  return options;
-}
+seed().catch((err) => { console.error("Fatal:", err); process.exit(1); });

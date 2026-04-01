@@ -4,15 +4,8 @@ import LoginPage from "./pages/LoginPage";
 import ReceptionPage from "./pages/ReceptionPage";
 import DoctorPage from "./pages/DoctorPage";
 import DisplayPage from "./pages/DisplayPage";
-
-function getStoredAuth() {
-  try {
-    const raw = localStorage.getItem("opd_auth");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
+import { connectSocket, disconnectSocket, joinDoctor, joinReception, joinHospital } from "./lib/socket";
+import { getStoredAuth, setToken, clearToken } from "./lib/api";
 
 function ProtectedRoute({ auth, allowedRoles, children }) {
   if (!auth) return <Navigate to="/" replace />;
@@ -27,27 +20,50 @@ export default function App() {
   useEffect(() => {
     if (auth) {
       localStorage.setItem("opd_auth", JSON.stringify(auth));
+      // Connect Socket.IO and join relevant rooms
+      const socket = connectSocket(auth.token);
+      joinHospital(auth.user.hospitalId);
+      if (auth.user.role === "doctor") joinDoctor(auth.user.doctorId);
+      if (auth.user.role === "receptionist") joinReception(auth.user.hospitalId);
+      return () => {}; // don't disconnect on re-render
     } else {
       localStorage.removeItem("opd_auth");
+      disconnectSocket();
     }
   }, [auth]);
 
   function handleLogin(data) {
+    /* Store token synchronously BEFORE React re-render so child
+       components can read it from localStorage / in-memory cache
+       on their very first useEffect call. */
+    localStorage.setItem("opd_auth", JSON.stringify(data));
+    setToken(data.token);
     setAuth(data);
-    if (data.user.role === "opd_receptionist") navigate("/reception");
+    if (data.user.role === "receptionist") navigate("/reception");
     else if (data.user.role === "doctor") navigate("/doctor");
   }
 
   function handleLogout() {
+    clearToken();
     setAuth(null);
+    disconnectSocket();
     navigate("/");
   }
 
   return (
     <Routes>
-      <Route path="/" element={auth ? <Navigate to={auth.user.role === "opd_receptionist" ? "/reception" : "/doctor"} replace /> : <LoginPage onLogin={handleLogin} />} />
+      <Route
+        path="/"
+        element={
+          auth ? (
+            <Navigate to={auth.user.role === "receptionist" ? "/reception" : "/doctor"} replace />
+          ) : (
+            <LoginPage onLogin={handleLogin} />
+          )
+        }
+      />
       <Route path="/reception" element={
-        <ProtectedRoute auth={auth} allowedRoles={["opd_receptionist"]}>
+        <ProtectedRoute auth={auth} allowedRoles={["receptionist"]}>
           <ReceptionPage auth={auth} onLogout={handleLogout} />
         </ProtectedRoute>
       } />

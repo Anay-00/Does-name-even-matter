@@ -14,7 +14,7 @@ const resourceByEmergencyType = {
 
 const hospitalCredentialsByCode = {
   "IND-AITR-01": { email: "aitricare@gmail.com", password: "Aitri@123", role: "hospital_admin_staff" },
-  "IND-ACRO-02": { email: "acrolife@gmail.com", password: "Acro@123", role: "hospital_admin_staff" },
+  "IND-AURO-02": { email: "aurobindo@gmail.com", password: "Auro@123", role: "hospital_admin_staff" },
   "IND-VIJAY-03": { email: "vijaycare@gmail.com", password: "Vijay@123", role: "hospital_admin_staff" },
   "IND-PALASIA-04": { email: "palasiacare@gmail.com", password: "Palasia@123", role: "hospital_admin_staff" },
   "IND-BHAWAR-05": { email: "bhawarlife@gmail.com", password: "Bhawar@123", role: "hospital_admin_staff" }

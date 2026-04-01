@@ -350,7 +350,7 @@ body {
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
   width: 100%;
-  max-width: 440px;
+  max-width: 560px;
   overflow: hidden;
 }
 
@@ -430,6 +430,606 @@ body {
   padding: 1px 5px;
   border-radius: 3px;
   font-size: 11px;
+}
+
+/* ── Login step flow ────────────────────────────────────────────── */
+
+.login-step {
+  animation: fadeInUp 0.25s ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.login-step-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.login-step-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.back-btn:hover {
+  text-decoration: underline;
+}
+
+.login-loading {
+  text-align: center;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 16px;
+  animation: pulse-text 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.login-footer-link {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+}
+
+.login-footer-link a {
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-footer-link a:hover {
+  text-decoration: underline;
+}
+
+/* ── Hospital grid (login) ──────────────────────────────────────── */
+
+.hospital-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.hospital-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 12px;
+  background: var(--surface-alt);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.hospital-card:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.hospital-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.hospital-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.hospital-code {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+/* ── Role grid (login) ──────────────────────────────────────────── */
+
+.role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.role-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 16px;
+  background: var(--surface-alt);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.role-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.role-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.role-reception:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.role-doctor:hover {
+  border-color: var(--success);
+  background: var(--success-light);
+}
+
+.role-icon {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.role-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.role-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+/* ── Doctor / Specialty grid (login) ────────────────────────────── */
+
+.doctor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.doctor-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 12px;
+  background: var(--surface-alt);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.doctor-card:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.doctor-card.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.doctor-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.doctor-dept-icon {
+  font-size: 24px;
+  margin-bottom: 2px;
+}
+
+.doctor-dept {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.doctor-count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.doctor-name-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.doctor-qual {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.doctor-room {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* ── Symptom grid (reception) ───────────────────────────────────── */
+
+.symptom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.symptom-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  background: var(--surface-alt);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.symptom-card:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.symptom-card.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+}
+
+.symptom-card.critical.selected {
+  border-color: var(--danger);
+  background: var(--danger-light);
+  box-shadow: 0 0 0 3px rgba(219, 68, 55, 0.15);
+}
+
+.symptom-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.symptom-label {
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.symptom-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* ── Priority row (reception) ───────────────────────────────────── */
+
+.priority-row {
+  display: flex;
+  gap: 8px;
+}
+
+.priority-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.priority-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.priority-btn.selected {
+  border-color: var(--purple);
+  background: var(--purple-light);
+  color: var(--purple);
+}
+
+.priority-auto-note {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+/* ── Token confirmation card (reception) ────────────────────────── */
+
+.token-confirmation {
+  border-color: var(--success);
+  background: var(--success-light);
+}
+
+.confirmation-badge {
+  display: inline-block;
+  background: var(--success);
+  color: white;
+  padding: 4px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.confirmation-token {
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--success-dark);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.confirmation-patient {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.confirmation-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.confirmation-details strong {
+  color: var(--text);
+}
+
+.confirmation-sms {
+  font-size: 12px;
+  color: var(--success-dark);
+  font-weight: 600;
+  padding-top: 10px;
+  border-top: 1px solid rgba(15, 157, 88, 0.2);
+}
+
+/* ── Filter row (reception queue) ───────────────────────────────── */
+
+.filter-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.form-select-sm {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.queue-scroll {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.row-priority {
+  background: var(--purple-light) !important;
+}
+
+.cell-primary {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.cell-secondary {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.ml-1 {
+  margin-left: 4px;
+}
+
+/* ── Color utilities ────────────────────────────────────────────── */
+
+.text-primary { color: var(--primary) !important; }
+.text-success { color: var(--success) !important; }
+.text-warning { color: var(--warning) !important; }
+.text-danger { color: var(--danger) !important; }
+.text-muted { color: var(--text-muted) !important; }
+
+/* ── Doctor identity card (doctor page) ─────────────────────────── */
+
+.doctor-identity {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+
+.doctor-identity-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.doctor-identity-icon {
+  font-size: 36px;
+  width: 56px;
+  height: 56px;
+  background: var(--primary-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doctor-identity-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.doctor-identity-dept {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.doctor-identity-stats {
+  display: flex;
+  gap: 24px;
+}
+
+.doctor-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.doctor-stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.doctor-stat-value small {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.doctor-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ── Current patient (doctor page) ──────────────────────────────── */
+
+.current-patient-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--success-dark);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.current-patient-empty {
+  background: var(--surface-alt) !important;
+  border: 2px dashed var(--border) !important;
+}
+
+/* ── Completed today (doctor page) ──────────────────────────────── */
+
+.completed-today-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+}
+
+.completed-today-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.completed-today-subtext {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* ── Alert messages ─────────────────────────────────────────────── */
+
+.alert {
+  padding: 12px 16px;
+  border-radius: var(--radius-xs);
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.alert-error {
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid rgba(219, 68, 55, 0.2);
+}
+
+/* ── Responsive: login ──────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .login-card { max-width: 100%; }
+  .hospital-grid { grid-template-columns: 1fr; }
+  .role-grid { grid-template-columns: 1fr; }
+  .doctor-identity { flex-direction: column; gap: 16px; }
+  .doctor-identity-stats { gap: 16px; }
 }
 
 /* ── Page layouts ───────────────────────────────────────────────── */

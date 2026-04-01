@@ -1,43 +1,92 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { api } from "../lib/api";
 
-const CREDENTIALS = {
-  opd_receptionist: [
-    { label: "AitriCare Reception", email: "aitri.opd@medisync.com", password: "OPD@123" },
-    { label: "PalasiaCare Reception", email: "palasia.opd@medisync.com", password: "OPD@234" },
-    { label: "AcroLife Reception", email: "acro.opd@medisync.com", password: "OPD@345" },
-  ],
-  doctor: [
-    { label: "AitriCare Doctor", email: "dr.aitri.opd@medisync.com", password: "Doctor@123" },
-    { label: "PalasiaCare Doctor", email: "dr.palasia.opd@medisync.com", password: "Doctor@456" },
-    { label: "AcroLife Doctor", email: "dr.acro.opd@medisync.com", password: "Doctor@234" },
-  ],
+const HOSPITALS = [
+  { code: "IND-AITR-01", name: "AitriCare Hospital", short: "aitri" },
+  { code: "IND-AURO-02", name: "Aurobindo Hospital", short: "auro" },
+  { code: "IND-VIJAY-03", name: "VijayCare Hospital", short: "vijay" },
+  { code: "IND-PALASIA-04", name: "PalasiaCare Hospital", short: "palasia" },
+  { code: "IND-BHAWAR-05", name: "BhawarLife Hospital", short: "bhawar" },
+];
+
+const DEPT_LABELS = {
+  CARD: "Cardiology",
+  ORTH: "Orthopedics",
+  NEUR: "Neurology",
+  PEDI: "Pediatrics",
+  GENM: "General Medicine",
 };
 
+const DEPT_ICONS = { CARD: "❤️", ORTH: "🦴", NEUR: "🧠", PEDI: "👶", GENM: "🩺" };
+
+const PASSWORD = "OPD@2026";
+
 export default function LoginPage({ onLogin }) {
-  const [role, setRole] = useState("opd_receptionist");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [step, setStep] = useState(1); // 1: hospital, 2: role, 3: dept select, 4: doctor select
+  const [hospital, setHospital] = useState(null);
+  const [role, setRole] = useState("");
+  const [selectedDept, setSelectedDept] = useState(null);
+  const [loginOptions, setLoginOptions] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  // Fetch login options (doctor list) once
+  useEffect(() => {
+    api.getLoginOptions().then(setLoginOptions).catch(() => {});
+  }, []);
+
+  function reset() {
+    setStep(1);
+    setHospital(null);
+    setRole("");
+    setSelectedDept(null);
     setError("");
-    setLoading(true);
-    try {
-      const result = await api.login({ email, password, role });
-      onLogin(result);
-    } catch (err) {
-      setError(err.message || "Login failed");
-    } finally {
-      setLoading(false);
+  }
+
+  function selectHospital(h) {
+    setHospital(h);
+    setError("");
+    setStep(2);
+  }
+
+  function selectRole(r) {
+    setRole(r);
+    setError("");
+    if (r === "receptionist") {
+      doLogin(`rec.${hospital.short}@medisync.com`);
+    } else {
+      setStep(3);
     }
   }
 
-  function quickLogin(cred) {
-    setEmail(cred.email);
-    setPassword(cred.password);
+  function selectDept(deptCode) {
+    setSelectedDept(deptCode);
+    setError("");
+    setStep(4);
+  }
+
+  function selectDoctor(email) {
+    doLogin(email);
+  }
+
+  // Get doctors for current hospital + dept from login options
+  function getDoctorsForDept(deptCode) {
+    if (!loginOptions || !hospital) return [];
+    const hOpts = loginOptions.find((o) => o.code === hospital.code);
+    if (!hOpts) return [];
+    return hOpts.doctors.filter((d) => d.deptCode === deptCode);
+  }
+
+  async function doLogin(email) {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await api.login({ email, password: PASSWORD });
+      onLogin(result);
+    } catch (err) {
+      setError(err.message || "Login failed");
+      setLoading(false);
+    }
   }
 
   return (
@@ -48,40 +97,109 @@ export default function LoginPage({ onLogin }) {
           <p>Queue & Wait-Time Management System</p>
         </div>
         <div className="login-body">
-          <div className="login-tabs">
-            <button className={`login-tab ${role === "opd_receptionist" ? "active" : ""}`} onClick={() => setRole("opd_receptionist")}>Reception</button>
-            <button className={`login-tab ${role === "doctor" ? "active" : ""}`} onClick={() => setRole("doctor")}>Doctor</button>
-          </div>
-
           {error && <div className="login-error">{error}</div>}
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label">Email</label>
-              <input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" required />
+          {/* Step 1: Select Hospital */}
+          {step === 1 && (
+            <div className="login-step">
+              <h3 className="login-step-title">Select Hospital</h3>
+              <div className="hospital-grid">
+                {HOSPITALS.map((h) => (
+                  <button
+                    key={h.code}
+                    className="hospital-card"
+                    onClick={() => selectHospital(h)}
+                  >
+                    <span className="hospital-icon">🏥</span>
+                    <span className="hospital-name">{h.name}</span>
+                    <span className="hospital-code">{h.code}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="login-footer-link">
+                <a href="/display">Open Patient Display Board →</a>
+              </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">Password</label>
-              <input className="form-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required />
-            </div>
-            <button className="btn btn-primary btn-lg w-full" type="submit" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
-            </button>
-          </form>
+          )}
 
-          <div className="login-help">
-            <strong>Quick Login:</strong>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-              {CREDENTIALS[role].map((c, i) => (
-                <button key={i} className="btn btn-outline btn-sm" type="button" onClick={() => quickLogin(c)}>
-                  {c.label}
+          {/* Step 2: Select Role */}
+          {step === 2 && (
+            <div className="login-step">
+              <button className="back-btn" onClick={reset}>← Back</button>
+              <h3 className="login-step-title">{hospital.name}</h3>
+              <p className="login-step-subtitle">Select your role</p>
+              <div className="role-grid">
+                <button
+                  className="role-card role-reception"
+                  onClick={() => selectRole("receptionist")}
+                  disabled={loading}
+                >
+                  <span className="role-icon">📋</span>
+                  <span className="role-title">Reception</span>
+                  <span className="role-desc">Register patients & issue tokens</span>
                 </button>
-              ))}
+                <button
+                  className="role-card role-doctor"
+                  onClick={() => selectRole("doctor")}
+                  disabled={loading}
+                >
+                  <span className="role-icon">🩺</span>
+                  <span className="role-title">Doctor</span>
+                  <span className="role-desc">Manage consultations</span>
+                </button>
+              </div>
+              {loading && <p className="login-loading">Signing in...</p>}
             </div>
-            <div style={{ marginTop: 10, fontSize: 11, color: "#9ca3af" }}>
-              Or visit <a href="/display" style={{ color: "#1a73e8" }}>/display</a> for the public Patient Display Board
+          )}
+
+          {/* Step 3: Select Department */}
+          {step === 3 && (
+            <div className="login-step">
+              <button className="back-btn" onClick={() => setStep(2)}>← Back</button>
+              <h3 className="login-step-title">{hospital.name}</h3>
+              <p className="login-step-subtitle">Select your department</p>
+              <div className="doctor-grid">
+                {Object.entries(DEPT_LABELS).map(([code, label]) => (
+                  <button
+                    key={code}
+                    className={`doctor-card ${selectedDept === code ? "selected" : ""}`}
+                    onClick={() => selectDept(code)}
+                    disabled={loading}
+                  >
+                    <span className="doctor-dept-icon">{DEPT_ICONS[code]}</span>
+                    <span className="doctor-dept">{label}</span>
+                    <span className="doctor-count">{getDoctorsForDept(code).length} doctors</span>
+                  </button>
+                ))}
+              </div>
+              {loading && <p className="login-loading">Signing in...</p>}
             </div>
-          </div>
+          )}
+
+          {/* Step 4: Select Doctor within Department */}
+          {step === 4 && (
+            <div className="login-step">
+              <button className="back-btn" onClick={() => { setStep(3); setSelectedDept(null); }}>← Back</button>
+              <h3 className="login-step-title">{DEPT_LABELS[selectedDept]}</h3>
+              <p className="login-step-subtitle">Select your profile</p>
+              <div className="doctor-grid">
+                {getDoctorsForDept(selectedDept).map((doc) => (
+                  <button
+                    key={doc.email}
+                    className="doctor-card"
+                    onClick={() => selectDoctor(doc.email)}
+                    disabled={loading}
+                  >
+                    <span className="doctor-dept-icon">{DEPT_ICONS[selectedDept]}</span>
+                    <span className="doctor-name-label">{doc.name}</span>
+                    <span className="doctor-qual">{doc.qualification}</span>
+                    <span className="doctor-room">Room {doc.room}</span>
+                  </button>
+                ))}
+              </div>
+              {loading && <p className="login-loading">Signing in...</p>}
+            </div>
+          )}
         </div>
       </div>
     </div>

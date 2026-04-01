@@ -12,9 +12,9 @@ const seedHospitals = [
     current_load: 0.32
   },
   {
-    code: "IND-ACRO-02",
-    name: "AcroLife Hospital",
-    address: "Service Road, AB Bypass near Acropolis Campus, Indore",
+    code: "IND-AURO-02",
+    name: "Aurobindo Hospital",
+    address: "Near Aurobindo Hospital, Sanwer Road, Indore",
     latitude: 22.8217,
     longitude: 75.9395,
     current_load: 0.37
@@ -47,7 +47,7 @@ const seedHospitals = [
 
 const seedInventory = {
   "IND-AITR-01": { icu_bed: 18, normal_bed: 68, ventilator: 10, ambulance: 6, emergency_doctor: 8 },
-  "IND-ACRO-02": { icu_bed: 14, normal_bed: 58, ventilator: 8, ambulance: 5, emergency_doctor: 6 },
+  "IND-AURO-02": { icu_bed: 14, normal_bed: 58, ventilator: 8, ambulance: 5, emergency_doctor: 6 },
   "IND-VIJAY-03": { icu_bed: 16, normal_bed: 62, ventilator: 9, ambulance: 5, emergency_doctor: 7 },
   "IND-PALASIA-04": { icu_bed: 15, normal_bed: 60, ventilator: 8, ambulance: 5, emergency_doctor: 6 },
   "IND-BHAWAR-05": { icu_bed: 13, normal_bed: 54, ventilator: 7, ambulance: 4, emergency_doctor: 5 }

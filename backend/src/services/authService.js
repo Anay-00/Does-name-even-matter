@@ -26,11 +26,11 @@ const users = [
     hospitalCode: "IND-AITR-01"
   },
   {
-    id: "ha_acro_02",
+    id: "ha_auro_02",
     role: "hospital_admin_staff",
-    email: "acrolife@gmail.com",
-    password: "Acro@123",
-    hospitalCode: "IND-ACRO-02"
+    email: "aurobindo@gmail.com",
+    password: "Auro@123",
+    hospitalCode: "IND-AURO-02"
   },
   {
     id: "ha_vijay_03",
@@ -68,11 +68,11 @@ const users = [
     hospitalCode: "IND-AITR-01"
   },
   {
-    id: "dr_acro_02",
+    id: "dr_auro_02",
     role: "doctor",
-    email: "acrodoctor@gmail.com",
+    email: "aurodoctor@gmail.com",
     password: "Doctor@234",
-    hospitalCode: "IND-ACRO-02"
+    hospitalCode: "IND-AURO-02"
   },
   {
     id: "dr_vijay_03",

@@ -1,78 +1,74 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { api } from "../lib/api";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { getSocket } from "../lib/socket";
 
-const POLL_INTERVAL = 4000;
-const PIE_COLORS = ["#1a73e8", "#0f9d58", "#f4b400", "#db4437", "#7c3aed", "#ec4899", "#06b6d4", "#84cc16"];
+const SYMPTOM_OPTIONS = [
+  { code: "CARD", label: "Chest Pain / Heart Issues", icon: "❤️", desc: "Chest pain, palpitations, shortness of breath", critical: true },
+  { code: "ORTH", label: "Bone / Joint / Injury", icon: "🦴", desc: "Bone pain, fractures, sprains, joint issues, back pain" },
+  { code: "NEUR", label: "Head / Neurological", icon: "🧠", desc: "Headache, dizziness, seizures, numbness, memory issues" },
+  { code: "PEDI", label: "Child / Infant Care", icon: "👶", desc: "Child illness, vaccination, growth concerns (0-16 yrs)" },
+  { code: "GENM", label: "Other / General", icon: "🩺", desc: "Fever, cold, cough, infections, general checkup" },
+];
+
+const PRIORITY_REASONS = [
+  { value: "", label: "Normal" },
+  { value: "elderly", label: "Elderly (65+)" },
+  { value: "pregnant", label: "Pregnant" },
+];
 
 export default function ReceptionPage({ auth, onLogout }) {
-  const [departments, setDepartments] = useState([]);
-  const [doctors, setDoctors] = useState([]);
-  const [tokens, setTokens] = useState([]);
-  const [stats, setStats] = useState(null);
+  const [panelData, setPanelData] = useState(null);
 
-  // Form state
-  const [deptId, setDeptId] = useState("");
-  const [doctorId, setDoctorId] = useState("");
+  // Form
   const [patientName, setPatientName] = useState("");
-  const [patientAge, setPatientAge] = useState("");
-  const [patientGender, setPatientGender] = useState("");
-  const [patientPhone, setPatientPhone] = useState("");
-  const [priority, setPriority] = useState("normal");
+  const [patientMobile, setPatientMobile] = useState("");
+  const [symptom, setSymptom] = useState("");
+  const [priorityReason, setPriorityReason] = useState("");
   const [issuing, setIssuing] = useState(false);
   const [lastIssued, setLastIssued] = useState(null);
 
-  // Filter state
+  // Filter
   const [filterDept, setFilterDept] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
-  const fetchData = useCallback(async () => {
+  const fetchPanel = useCallback(async () => {
     try {
-      const [tkns, st] = await Promise.all([api.getTokens(), api.getStats()]);
-      setTokens(tkns);
-      setStats(st);
-    } catch {
-      // silently retry
+      const data = await api.getReceptionPanel();
+      setPanelData(data);
+    } catch (err) {
+      console.error("Failed to load panel:", err);
     }
   }, []);
 
   useEffect(() => {
-    api.getDepartments().then(setDepartments).catch(() => {});
-    fetchData();
-    const timer = setInterval(fetchData, POLL_INTERVAL);
-    return () => clearInterval(timer);
-  }, [fetchData]);
+    fetchPanel();
 
-  // Load doctors when department changes
-  useEffect(() => {
-    if (!deptId) { setDoctors([]); return; }
-    const dept = departments.find((d) => d.id === deptId);
-    if (dept) {
-      api.getDoctors(dept.name).then(setDoctors).catch(() => setDoctors([]));
+    // Listen for Socket.IO queue updates
+    const socket = getSocket();
+    if (socket) {
+      const handler = () => fetchPanel();
+      socket.on("queue:update", handler);
+      return () => socket.off("queue:update", handler);
     }
-  }, [deptId, departments]);
+  }, [fetchPanel]);
 
   async function handleIssue(e) {
     e.preventDefault();
+    if (!patientName.trim() || !patientMobile.trim() || !symptom) return;
     setIssuing(true);
     try {
-      const token = await api.issueToken({
-        departmentId: deptId,
-        doctorId: doctorId || undefined,
-        patientName,
-        patientAge: patientAge ? parseInt(patientAge) : undefined,
-        patientGender: patientGender || undefined,
-        patientPhone: patientPhone || undefined,
-        priority,
+      const result = await api.issueToken({
+        patientName: patientName.trim(),
+        patientMobile: patientMobile.trim(),
+        symptomCategory: symptom,
+        priorityReason: priorityReason || undefined,
       });
-      setLastIssued(token);
+      setLastIssued(result);
       setPatientName("");
-      setPatientAge("");
-      setPatientGender("");
-      setPatientPhone("");
-      setPriority("normal");
-      setDoctorId("");
-      fetchData();
+      setPatientMobile("");
+      setSymptom("");
+      setPriorityReason("");
+      fetchPanel();
     } catch (err) {
       alert(err.message);
     } finally {
@@ -81,234 +77,198 @@ export default function ReceptionPage({ auth, onLogout }) {
   }
 
   async function handleCancel(id) {
+    if (!confirm("Cancel this token?")) return;
     try {
       await api.cancelToken(id);
-      fetchData();
+      fetchPanel();
     } catch (err) {
       alert(err.message);
     }
   }
 
-  async function handleSkip(id) {
-    try {
-      await api.skipToken(id);
-      fetchData();
-    } catch (err) {
-      alert(err.message);
-    }
-  }
+  const stats = panelData?.stats || {};
+  const tokens = panelData?.tokens || [];
+  const departments = panelData?.departments || [];
+  const doctors = panelData?.doctors || [];
 
-  // Filtered tokens
+  // Build lookup maps
+  const deptMap = Object.fromEntries(departments.map((d) => [d.id, d]));
+  const docMap = Object.fromEntries(doctors.map((d) => [d.id, d]));
+
+  // Filter tokens
   const filteredTokens = tokens.filter((t) => {
     if (filterDept && t.department_id !== filterDept) return false;
     if (filterStatus && t.status !== filterStatus) return false;
     return true;
   });
 
-  // Stats charts data
-  const hourlyData = stats?.hourlyArrivals
-    ? stats.hourlyArrivals.map((count, hour) => ({ hour: `${hour}:00`, count })).filter((d) => d.count > 0)
-    : [];
-
-  const deptDistData = stats?.deptCounts
-    ? Object.entries(stats.deptCounts).map(([deptId, count]) => {
-        const dept = departments.find((d) => d.id === deptId);
-        return { name: dept?.name || "Unknown", value: count };
-      })
-    : [];
-
   return (
     <>
       <nav className="navbar">
         <div className="navbar-brand">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          MediSync OPD
+          <span className="navbar-logo">⚕</span> MediSync OPD
         </div>
         <div className="navbar-info">
           <span className="navbar-hospital">{auth.user.hospitalName}</span>
-          <span>Reception Desk</span>
+          <span className="navbar-role">Reception</span>
           <button className="btn btn-outline btn-sm" onClick={onLogout}>Logout</button>
         </div>
       </nav>
 
       <div className="page-container">
-        {/* Stats cards */}
-        {stats && (
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-value" style={{ color: "var(--primary)" }}>{stats.total}</div>
-              <div className="stat-label">Total Tokens</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value" style={{ color: "var(--warning)" }}>{stats.waiting}</div>
-              <div className="stat-label">Waiting</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value" style={{ color: "var(--success)" }}>{stats.inConsultation}</div>
-              <div className="stat-label">In Consultation</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value" style={{ color: "#666" }}>{stats.completed}</div>
-              <div className="stat-label">Completed</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value" style={{ color: "var(--purple)" }}>{Math.round(stats.avgConsultationSeconds / 60)}<span style={{ fontSize: 14, fontWeight: 500 }}> min</span></div>
-              <div className="stat-label">Avg Consultation</div>
-            </div>
-          </div>
-        )}
+        {/* Stats bar */}
+        <div className="stats-grid">
+          <div className="stat-card"><div className="stat-value text-primary">{stats.total || 0}</div><div className="stat-label">Total</div></div>
+          <div className="stat-card"><div className="stat-value text-warning">{stats.waiting || 0}</div><div className="stat-label">Waiting</div></div>
+          <div className="stat-card"><div className="stat-value text-success">{stats.inConsultation || 0}</div><div className="stat-label">In Consult</div></div>
+          <div className="stat-card"><div className="stat-value text-muted">{stats.completed || 0}</div><div className="stat-label">Done</div></div>
+          <div className="stat-card"><div className="stat-value text-danger">{stats.cancelled || 0}</div><div className="stat-label">Cancelled</div></div>
+        </div>
 
         <div className="page-grid">
-          {/* ── Left: Issue Token Form ──────────────────────────── */}
+          {/* ── Left: Issue Token ─────────────────────────────── */}
           <div>
             <div className="card">
-              <div className="card-header">
-                Issue New Token
-                {lastIssued && (
-                  <span className="badge badge-waiting">Last: #{String(lastIssued.token_number).padStart(3, "0")}</span>
-                )}
-              </div>
+              <div className="card-header">Register Patient</div>
               <div className="card-body">
                 <form onSubmit={handleIssue}>
-                  <div className="form-group">
-                    <label className="form-label">Department *</label>
-                    <select className="form-select" value={deptId} onChange={(e) => setDeptId(e.target.value)} required>
-                      <option value="">Select department</option>
-                      {departments.map((d) => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Doctor (optional)</label>
-                    <select className="form-select" value={doctorId} onChange={(e) => setDoctorId(e.target.value)}>
-                      <option value="">Auto-assign</option>
-                      {doctors.map((d) => (
-                        <option key={d.id} value={d.id}>{d.full_name} — {d.specialization}</option>
-                      ))}
-                    </select>
-                  </div>
-
                   <div className="form-group">
                     <label className="form-label">Patient Name *</label>
                     <input className="form-input" value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder="Full name" required />
                   </div>
 
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">Age</label>
-                      <input className="form-input" type="number" min="0" max="150" value={patientAge} onChange={(e) => setPatientAge(e.target.value)} placeholder="Age" />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Gender</label>
-                      <select className="form-select" value={patientGender} onChange={(e) => setPatientGender(e.target.value)}>
-                        <option value="">Select</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
+                  <div className="form-group">
+                    <label className="form-label">Mobile Number *</label>
+                    <input className="form-input" type="tel" value={patientMobile} onChange={(e) => setPatientMobile(e.target.value)} placeholder="10-digit mobile" required pattern="[0-9]{10}" maxLength={10} />
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Phone</label>
-                    <input className="form-input" type="tel" value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)} placeholder="Mobile number" />
+                    <label className="form-label">What's the issue? *</label>
+                    <div className="symptom-grid">
+                      {SYMPTOM_OPTIONS.map((s) => (
+                        <button
+                          key={s.code}
+                          type="button"
+                          className={`symptom-card ${symptom === s.code ? "selected" : ""} ${s.critical ? "critical" : ""}`}
+                          onClick={() => setSymptom(s.code)}
+                        >
+                          <span className="symptom-icon">{s.icon}</span>
+                          <span className="symptom-label">{s.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    {symptom && (
+                      <p className="symptom-desc">{SYMPTOM_OPTIONS.find((s) => s.code === symptom)?.desc}</p>
+                    )}
                   </div>
 
                   <div className="form-group">
                     <label className="form-label">Priority</label>
-                    <select className="form-select" value={priority} onChange={(e) => setPriority(e.target.value)}>
-                      <option value="normal">Normal</option>
-                      <option value="priority">Priority (Senior / Disabled)</option>
-                    </select>
+                    <div className="priority-row">
+                      {PRIORITY_REASONS.map((p) => (
+                        <button
+                          key={p.value}
+                          type="button"
+                          className={`priority-btn ${priorityReason === p.value ? "selected" : ""}`}
+                          onClick={() => setPriorityReason(p.value)}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                    {symptom === "CARD" && (
+                      <p className="priority-auto-note">Cardiac cases are automatically marked as priority.</p>
+                    )}
                   </div>
 
-                  <button className="btn btn-primary btn-lg w-full" type="submit" disabled={issuing || !deptId || !patientName.trim()}>
+                  <button className="btn btn-primary btn-lg w-full" type="submit" disabled={issuing || !symptom || !patientName.trim() || !patientMobile.trim()}>
                     {issuing ? "Issuing..." : "Issue Token"}
                   </button>
                 </form>
               </div>
             </div>
 
-            {/* Last issued confirmation */}
+            {/* Token issued confirmation */}
             {lastIssued && (
-              <div className="card mt-4" style={{ borderColor: "var(--success)", borderWidth: 2 }}>
+              <div className="card mt-4 token-confirmation">
                 <div className="card-body text-center">
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--success)", textTransform: "uppercase", letterSpacing: 1 }}>Token Issued Successfully</div>
-                  <div style={{ fontSize: 56, fontWeight: 900, color: "var(--primary)", lineHeight: 1, margin: "8px 0" }}>
-                    #{String(lastIssued.token_number).padStart(3, "0")}
+                  <div className="confirmation-badge">Token Issued</div>
+                  <div className="confirmation-token">{lastIssued.token.token_number}</div>
+                  <div className="confirmation-patient">{lastIssued.token.patient_name}</div>
+                  <div className="confirmation-details">
+                    <div><strong>Doctor:</strong> {lastIssued.doctor.name}</div>
+                    <div><strong>Room:</strong> {lastIssued.doctor.room_number}</div>
+                    <div><strong>Dept:</strong> {lastIssued.department.name}</div>
+                    <div><strong>Est. Wait:</strong> ~{Math.round(lastIssued.eta)} min</div>
+                    <div><strong>Position:</strong> #{lastIssued.positionInQueue}</div>
                   </div>
-                  <div style={{ fontWeight: 600 }}>{lastIssued.patient_name}</div>
-                  <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>{lastIssued.departments?.name}</div>
+                  <div className="confirmation-sms">
+                    SMS/WhatsApp notification queued for {lastIssued.token.patient_mobile}
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* ── Right: Queue + Charts ──────────────────────────── */}
+          {/* ── Right: Queue ──────────────────────────────────── */}
           <div>
-            {/* Filters */}
-            <div className="card mb-4">
-              <div className="card-header">Today's Queue</div>
+            <div className="card">
+              <div className="card-header">
+                Today's Queue
+                <span className="badge badge-waiting">{filteredTokens.length} tokens</span>
+              </div>
               <div className="card-body">
-                <div className="flex gap-2 mb-4 flex-wrap">
-                  <select className="form-select" style={{ width: "auto", minWidth: 180 }} value={filterDept} onChange={(e) => setFilterDept(e.target.value)}>
+                <div className="filter-row">
+                  <select className="form-select form-select-sm" value={filterDept} onChange={(e) => setFilterDept(e.target.value)}>
                     <option value="">All Departments</option>
                     {departments.map((d) => (
                       <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
                   </select>
-                  <select className="form-select" style={{ width: "auto", minWidth: 160 }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                  <select className="form-select form-select-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
                     <option value="">All Statuses</option>
                     <option value="waiting">Waiting</option>
                     <option value="in_consultation">In Consultation</option>
                     <option value="completed">Completed</option>
-                    <option value="skipped">Skipped</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
-                  <span style={{ fontSize: 13, color: "var(--text-secondary)", alignSelf: "center" }}>
-                    {filteredTokens.length} token{filteredTokens.length !== 1 ? "s" : ""}
-                  </span>
                 </div>
 
                 {filteredTokens.length === 0 ? (
-                  <div className="empty-state">No tokens yet. Issue a token from the left panel.</div>
+                  <div className="empty-state">No tokens yet</div>
                 ) : (
-                  <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                  <div className="queue-scroll">
                     <table className="queue-table">
                       <thead>
                         <tr>
-                          <th>#</th>
+                          <th>Token</th>
                           <th>Patient</th>
-                          <th>Department</th>
+                          <th>Doctor / Room</th>
                           <th>Status</th>
-                          <th>Issued</th>
-                          <th>Actions</th>
+                          <th>Time</th>
+                          <th></th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredTokens.map((t) => (
-                          <tr key={t.id}>
+                          <tr key={t.id} className={t.priority === "priority" ? "row-priority" : ""}>
                             <td>
-                              <span className="token-number">#{String(t.token_number).padStart(3, "0")}</span>
-                              {t.priority === "priority" && <span className="badge badge-priority" style={{ marginLeft: 6 }}>P</span>}
+                              <span className="token-number">{t.token_number}</span>
+                              {t.priority === "priority" && <span className="badge badge-priority">P</span>}
                             </td>
                             <td>
-                              <div style={{ fontWeight: 600 }}>{t.patient_name}</div>
-                              <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                                {t.patient_age ? `${t.patient_age}y` : ""}{t.patient_gender ? ` / ${t.patient_gender}` : ""}
-                              </div>
+                              <div className="cell-primary">{t.patient_name}</div>
+                              <div className="cell-secondary">{t.patient_mobile}</div>
                             </td>
-                            <td style={{ fontSize: 13 }}>{t.departments?.name || "—"}</td>
+                            <td>
+                              <div className="cell-primary">{docMap[t.doctor_id]?.name || "—"}</div>
+                              <div className="cell-secondary">Room {t.room_number} · {deptMap[t.department_id]?.name}</div>
+                            </td>
                             <td><span className={`badge badge-${t.status}`}>{t.status.replace("_", " ")}</span></td>
-                            <td style={{ fontSize: 13, color: "var(--text-secondary)" }}>{new Date(t.issued_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</td>
+                            <td className="cell-secondary">{new Date(t.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</td>
                             <td>
                               {t.status === "waiting" && (
-                                <div className="flex gap-2">
-                                  <button className="btn btn-outline btn-sm" onClick={() => handleSkip(t.id)}>Skip</button>
-                                  <button className="btn btn-danger btn-sm" onClick={() => handleCancel(t.id)}>Cancel</button>
-                                </div>
+                                <button className="btn btn-danger btn-sm" onClick={() => handleCancel(t.id)}>Cancel</button>
                               )}
                             </td>
                           </tr>
@@ -319,41 +279,6 @@ export default function ReceptionPage({ auth, onLogout }) {
                 )}
               </div>
             </div>
-
-            {/* Charts */}
-            {stats && stats.total > 0 && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <div className="card">
-                  <div className="card-header">Hourly Arrivals</div>
-                  <div className="card-body">
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={hourlyData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="hour" fontSize={11} />
-                        <YAxis fontSize={11} />
-                        <Tooltip />
-                        <Bar dataKey="count" fill="#1a73e8" radius={[4, 4, 0, 0]} name="Patients" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                <div className="card">
-                  <div className="card-header">Department Distribution</div>
-                  <div className="card-body">
-                    <ResponsiveContainer width="100%" height={200}>
-                      <PieChart>
-                        <Pie data={deptDistData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} fontSize={11}>
-                          {deptDistData.map((_, i) => (
-                            <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

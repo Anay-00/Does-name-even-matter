@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { api } from "../lib/api";
-
-const POLL_INTERVAL = 3000;
+import { getSocket } from "../lib/socket";
 
 function formatTimer(seconds) {
   const m = Math.floor(seconds / 60);
@@ -9,54 +8,48 @@ function formatTimer(seconds) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+const SYMPTOM_ICONS = { CARD: "❤️", ORTH: "🦴", NEUR: "🧠", PEDI: "👶", GENM: "🩺" };
+
 export default function DoctorPage({ auth, onLogout }) {
-  const [departments, setDepartments] = useState([]);
-  const [selectedDept, setSelectedDept] = useState("");
-  const [tokens, setTokens] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [currentToken, setCurrentToken] = useState(null);
+  const [panel, setPanel] = useState(null);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [loading, setLoading] = useState("");
+  const [error, setError] = useState("");
   const timerRef = useRef(null);
 
-  const fetchData = useCallback(async () => {
+  const { doctorName, departmentName, departmentCode, roomNumber, hospitalName, doctorId } = auth.user;
+
+  /* ── Fetch panel state ────────────────────────────────────────── */
+  const fetchPanel = useCallback(async () => {
     try {
-      const params = {};
-      if (selectedDept) params.departmentId = selectedDept;
-      const [tkns, st] = await Promise.all([api.getTokens(params), api.getStats()]);
-      setTokens(tkns);
-      setStats(st);
-
-      // Detect current in_consultation token
-      const inConsult = tkns.find((t) => t.status === "in_consultation");
-      if (inConsult) {
-        setCurrentToken(inConsult);
-      } else {
-        setCurrentToken(null);
-      }
+      const data = await api.getDoctorPanel();
+      setPanel(data);
     } catch {
-      // retry silently
+      // silent retry
     }
-  }, [selectedDept]);
-
-  useEffect(() => {
-    api.getDepartments().then((depts) => {
-      setDepartments(depts);
-      if (depts.length > 0) setSelectedDept(depts[0].id);
-    }).catch(() => {});
   }, []);
 
   useEffect(() => {
-    fetchData();
-    const timer = setInterval(fetchData, POLL_INTERVAL);
-    return () => clearInterval(timer);
-  }, [fetchData]);
+    fetchPanel();
+  }, [fetchPanel]);
 
-  // Consultation timer
+  /* ── Socket.IO real-time listener ─────────────────────────────── */
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handler = () => fetchPanel();
+    socket.on("queue:update", handler);
+    return () => socket.off("queue:update", handler);
+  }, [fetchPanel]);
+
+  /* ── Consultation timer ───────────────────────────────────────── */
+  const currentPatient = panel?.currentPatient;
   useEffect(() => {
     clearInterval(timerRef.current);
-    if (currentToken?.called_at) {
-      const start = new Date(currentToken.called_at).getTime();
+    const startField = currentPatient?.consultation_started_at || currentPatient?.called_at;
+    if (startField) {
+      const start = new Date(startField).getTime();
       timerRef.current = setInterval(() => {
         setTimerSeconds(Math.floor((Date.now() - start) / 1000));
       }, 1000);
@@ -65,167 +58,151 @@ export default function DoctorPage({ auth, onLogout }) {
       setTimerSeconds(0);
     }
     return () => clearInterval(timerRef.current);
-  }, [currentToken?.id, currentToken?.called_at]);
+  }, [currentPatient?.id, currentPatient?.consultation_started_at, currentPatient?.called_at]);
 
-  async function handleCallNext() {
-    if (!selectedDept) return;
-    setLoading("call");
+  /* ── Patient Entered (start consultation on first waiting) ────── */
+  async function handlePatientEntered() {
+    const next = panel?.waitingQueue?.[0];
+    if (!next) return;
+    setLoading("enter");
+    setError("");
     try {
-      await api.callNext({ departmentId: selectedDept });
-      fetchData();
+      await api.startConsultation(next.id);
+      await fetchPanel();
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
     } finally {
       setLoading("");
     }
   }
 
+  /* ── Consultation Complete ────────────────────────────────────── */
   async function handleComplete() {
-    if (!currentToken) return;
+    if (!currentPatient) return;
     setLoading("complete");
+    setError("");
     try {
-      await api.completeToken(currentToken.id);
-      setCurrentToken(null);
-      fetchData();
+      await api.completeConsultation(currentPatient.id);
+      await fetchPanel();
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
     } finally {
       setLoading("");
     }
   }
 
-  async function handleSkip() {
-    if (!currentToken) return;
-    setLoading("skip");
-    try {
-      await api.skipToken(currentToken.id);
-      setCurrentToken(null);
-      fetchData();
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setLoading("");
-    }
-  }
-
-  async function handleCallSpecific(id) {
-    setLoading("call");
-    try {
-      await api.callToken(id);
-      fetchData();
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setLoading("");
-    }
-  }
-
-  const waitingTokens = tokens.filter((t) => t.status === "waiting");
-  const completedTokens = tokens.filter((t) => t.status === "completed");
-  const avgConsult = stats ? Math.round(stats.avgConsultationSeconds / 60) : 5;
+  const waitingQueue = panel?.waitingQueue || [];
+  const completedCount = panel?.completedCount || 0;
+  const totalToday = panel?.totalToday || 0;
+  const avgMin = panel?.avgConsultationMinutes || 10;
 
   return (
     <>
+      {/* ── Navbar ──────────────────────────────────────────────── */}
       <nav className="navbar">
         <div className="navbar-brand">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           MediSync OPD
         </div>
         <div className="navbar-info">
-          <span className="navbar-hospital">{auth.user.hospitalName}</span>
-          <span>Doctor Panel</span>
+          <span className="navbar-hospital">{hospitalName}</span>
+          <span>{doctorName}</span>
           <button className="btn btn-outline btn-sm" onClick={onLogout}>Logout</button>
         </div>
       </nav>
 
       <div className="page-container">
-        {/* Stats */}
-        {stats && (
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-value" style={{ color: "var(--warning)" }}>{stats.waiting}</div>
-              <div className="stat-label">Waiting</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value" style={{ color: "var(--success)" }}>{stats.inConsultation}</div>
-              <div className="stat-label">In Consultation</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value" style={{ color: "#666" }}>{stats.completed}</div>
-              <div className="stat-label">Completed</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value" style={{ color: "var(--purple)" }}>{avgConsult}<span style={{ fontSize: 14, fontWeight: 500 }}> min</span></div>
-              <div className="stat-label">Avg Consult</div>
+        {/* ── Doctor identity card ─────────────────────────────── */}
+        <div className="doctor-identity">
+          <div className="doctor-identity-left">
+            <div className="doctor-identity-icon">{SYMPTOM_ICONS[departmentCode] || "🩺"}</div>
+            <div>
+              <div className="doctor-identity-name">{doctorName}</div>
+              <div className="doctor-identity-dept">{departmentName} &middot; Room {roomNumber}</div>
             </div>
           </div>
-        )}
-
-        {/* Department tabs */}
-        <div className="dept-tabs mb-4">
-          {departments.map((d) => (
-            <button key={d.id} className={`dept-tab ${selectedDept === d.id ? "active" : ""}`} onClick={() => setSelectedDept(d.id)}>
-              {d.name}
-            </button>
-          ))}
+          <div className="doctor-identity-stats">
+            <div className="doctor-stat">
+              <span className="doctor-stat-value" style={{ color: "var(--warning)" }}>{waitingQueue.length}</span>
+              <span className="doctor-stat-label">Waiting</span>
+            </div>
+            <div className="doctor-stat">
+              <span className="doctor-stat-value" style={{ color: "var(--success)" }}>{currentPatient ? 1 : 0}</span>
+              <span className="doctor-stat-label">Current</span>
+            </div>
+            <div className="doctor-stat">
+              <span className="doctor-stat-value" style={{ color: "#666" }}>{completedCount}</span>
+              <span className="doctor-stat-label">Done</span>
+            </div>
+            <div className="doctor-stat">
+              <span className="doctor-stat-value" style={{ color: "var(--purple, #7c3aed)" }}>{avgMin}<small> min</small></span>
+              <span className="doctor-stat-label">Avg</span>
+            </div>
+          </div>
         </div>
+
+        {error && <div className="alert alert-error">{error}</div>}
 
         <div className="page-grid">
           {/* ── Left: Current Patient ──────────────────────────── */}
           <div>
-            {currentToken ? (
+            {currentPatient ? (
               <div className="current-patient">
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--success-dark)", textTransform: "uppercase", letterSpacing: 2 }}>Now Serving</div>
-                <div className="token-big">#{String(currentToken.token_number).padStart(3, "0")}</div>
-                <div className="patient-big">{currentToken.patient_name}</div>
+                <div className="current-patient-label">Now Serving</div>
+                <div className="token-big">{currentPatient.token_number}</div>
+                <div className="patient-big">{currentPatient.patient_name}</div>
                 <div className="patient-meta">
-                  {currentToken.patient_age ? `${currentToken.patient_age}y` : ""}
-                  {currentToken.patient_gender ? ` / ${currentToken.patient_gender}` : ""}
-                  {currentToken.departments?.name ? ` · ${currentToken.departments.name}` : ""}
+                  {currentPatient.patient_mobile}
+                  {currentPatient.symptom_category ? ` · ${SYMPTOM_ICONS[currentPatient.symptom_category] || ""} ${currentPatient.symptom_category}` : ""}
+                  {currentPatient.priority === "priority" && (
+                    <span className="badge badge-priority" style={{ marginLeft: 8 }}>PRIORITY</span>
+                  )}
                 </div>
                 <div className="timer">{formatTimer(timerSeconds)}</div>
-                <div className="flex gap-2 mt-4" style={{ justifyContent: "center" }}>
-                  <button className="btn btn-success btn-lg" onClick={handleComplete} disabled={loading === "complete"}>
-                    {loading === "complete" ? "Completing..." : "✓ Complete"}
-                  </button>
-                  <button className="btn btn-outline btn-lg" onClick={handleSkip} disabled={loading === "skip"}>
-                    Skip
-                  </button>
-                </div>
+                <button
+                  className="btn btn-success btn-lg mt-4"
+                  onClick={handleComplete}
+                  disabled={loading === "complete"}
+                  style={{ fontSize: 18, padding: "14px 40px" }}
+                >
+                  {loading === "complete" ? "Completing..." : "✓ Consultation Complete"}
+                </button>
               </div>
             ) : (
-              <div className="current-patient" style={{ background: "var(--surface-alt)", border: "2px dashed var(--border)" }}>
-                <div className="no-patient">
-                  <div style={{ fontSize: 48, opacity: 0.3 }}>🩺</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, marginTop: 8 }}>No patient in consultation</div>
-                  <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>Click "Call Next" to begin</div>
+              <div className="current-patient current-patient-empty">
+                <div style={{ fontSize: 48, opacity: 0.3 }}>🩺</div>
+                <div style={{ fontSize: 16, fontWeight: 600, marginTop: 8 }}>No patient in consultation</div>
+                <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>
+                  {waitingQueue.length > 0
+                    ? "Click \"Patient Entered\" when the next patient enters your room"
+                    : "No patients waiting — you're all caught up!"}
                 </div>
               </div>
             )}
 
+            {/* Patient Entered button */}
             <button
               className="btn btn-primary btn-lg w-full mt-4"
-              onClick={handleCallNext}
-              disabled={loading === "call" || waitingTokens.length === 0 || !!currentToken}
+              onClick={handlePatientEntered}
+              disabled={loading === "enter" || waitingQueue.length === 0 || !!currentPatient}
               style={{ fontSize: 18, padding: "16px 28px" }}
             >
-              {loading === "call" ? "Calling..." : `📢 Call Next Patient${waitingTokens.length > 0 ? ` (${waitingTokens.length} waiting)` : ""}`}
+              {loading === "enter"
+                ? "Starting..."
+                : waitingQueue.length > 0 && !currentPatient
+                  ? `🚶 Patient Entered — ${waitingQueue[0].token_number} (${waitingQueue[0].patient_name})`
+                  : `🚶 Patient Entered${waitingQueue.length > 0 ? ` (${waitingQueue.length} waiting)` : ""}`}
             </button>
 
-            {/* Completed list */}
-            {completedTokens.length > 0 && (
-              <div className="card mt-4">
-                <div className="card-header">
-                  Completed Today
-                  <span className="badge badge-completed">{completedTokens.length}</span>
+            {/* Completed today count */}
+            {completedCount > 0 && (
+              <div className="completed-today-card mt-4">
+                <div className="completed-today-header">
+                  <span>Completed Today</span>
+                  <span className="badge badge-completed">{completedCount}</span>
                 </div>
-                <div className="card-body" style={{ maxHeight: 200, overflowY: "auto" }}>
-                  {completedTokens.map((t) => (
-                    <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--border-light)", fontSize: 13 }}>
-                      <span><span className="token-number" style={{ fontSize: 13 }}>#{String(t.token_number).padStart(3, "0")}</span> {t.patient_name}</span>
-                      <span style={{ color: "var(--text-muted)" }}>{t.consultation_duration_seconds ? formatTimer(t.consultation_duration_seconds) : "—"}</span>
-                    </div>
-                  ))}
+                <div className="completed-today-subtext">
+                  {totalToday} total &middot; {avgMin} min avg consultation
                 </div>
               </div>
             )}
@@ -235,43 +212,37 @@ export default function DoctorPage({ auth, onLogout }) {
           <div className="card">
             <div className="card-header">
               Waiting Queue
-              <span className="badge badge-waiting">{waitingTokens.length} waiting</span>
+              <span className="badge badge-waiting">{waitingQueue.length}</span>
             </div>
             <div className="card-body">
-              {waitingTokens.length === 0 ? (
-                <div className="empty-state">No patients waiting in this department.</div>
+              {waitingQueue.length === 0 ? (
+                <div className="empty-state">No patients waiting. Great job!</div>
               ) : (
-                <div style={{ maxHeight: 500, overflowY: "auto" }}>
+                <div className="queue-scroll">
                   <table className="queue-table">
                     <thead>
                       <tr>
-                        <th>#</th>
+                        <th>Pos</th>
+                        <th>Token</th>
                         <th>Patient</th>
-                        <th>Department</th>
-                        <th>Est. Wait</th>
-                        <th></th>
+                        <th>Symptom</th>
+                        <th>ETA</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {waitingTokens.map((t, idx) => (
-                        <tr key={t.id}>
+                      {waitingQueue.map((t) => (
+                        <tr key={t.id} className={t.priority === "priority" ? "row-priority" : ""}>
+                          <td className="cell-secondary">{t.position}</td>
                           <td>
-                            <span className="token-number">#{String(t.token_number).padStart(3, "0")}</span>
-                            {t.priority === "priority" && <span className="badge badge-priority" style={{ marginLeft: 6 }}>P</span>}
+                            <span className="token-number">{t.token_number}</span>
+                            {t.priority === "priority" && <span className="badge badge-priority ml-1">P</span>}
                           </td>
                           <td>
-                            <div style={{ fontWeight: 600 }}>{t.patient_name}</div>
-                            <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                              {t.patient_age ? `${t.patient_age}y` : ""}{t.patient_gender ? ` / ${t.patient_gender}` : ""}
-                            </div>
+                            <div className="cell-primary">{t.patient_name}</div>
+                            <div className="cell-secondary">{t.patient_mobile}</div>
                           </td>
-                          <td style={{ fontSize: 13 }}>{t.departments?.name || "—"}</td>
-                          <td style={{ fontWeight: 700, color: "var(--warning)" }}>~{(idx + 1) * avgConsult} min</td>
-                          <td>
-                            {!currentToken && idx === 0 && (
-                              <button className="btn btn-primary btn-sm" onClick={() => handleCallSpecific(t.id)} disabled={!!loading}>Call</button>
-                            )}
-                          </td>
+                          <td className="cell-secondary">{SYMPTOM_ICONS[t.symptom_category] || ""} {t.symptom_category}</td>
+                          <td style={{ fontWeight: 700, color: "var(--warning)" }}>~{Math.round(t.live_eta_minutes)} min</td>
                         </tr>
                       ))}
                     </tbody>

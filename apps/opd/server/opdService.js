@@ -272,6 +272,47 @@ export async function getReceptionState(hospitalId) {
   };
 }
 
+/* ── Patient portal: live token status + queue position ─────────── */
+export async function getPatientTokenStatus(tokenId) {
+  const token = await repo.getTokenById(tokenId);
+  if (!token) throw new Error("Token not found");
+
+  const doctor = await repo.getDoctorById(token.doctor_id);
+
+  let positionInQueue = null;
+  let eta = null;
+
+  if (token.status === "waiting") {
+    const [waitingQueue, current] = await Promise.all([
+      repo.getWaitingQueue(token.doctor_id),
+      repo.getCurrentConsultation(token.doctor_id),
+    ]);
+    const idx = waitingQueue.findIndex((t) => t.id === tokenId);
+    if (idx !== -1) {
+      positionInQueue = idx + 1;
+      const peopleAhead = idx + (current ? 1 : 0);
+      eta = await calculateEta(token.doctor_id, peopleAhead);
+    }
+  }
+
+  return {
+    token: {
+      id: token.id,
+      token_number: token.token_number,
+      status: token.status,
+      patient_name: token.patient_name,
+      symptom_category: token.symptom_category,
+      estimated_wait_minutes: token.estimated_wait_minutes,
+      created_at: token.created_at,
+    },
+    doctor: doctor
+      ? { name: doctor.name, room_number: doctor.room_number, qualification: doctor.qualification }
+      : null,
+    positionInQueue,
+    eta,
+  };
+}
+
 /* ── Get display board state ────────────────────────────────────── */
 export async function getDisplayState(hospitalId) {
   const [tokens, depts, doctors] = await Promise.all([

@@ -1,10 +1,5 @@
-const PROFILE_KEY = "medisync.pwa.profile";
-const REQUEST_KEY = "medisync.pwa.activeRequest";
-const QUEUE_KEY = "medisync.pwa.requestQueue";
-const AUTH_KEY = "medisync.pwa.auth";
-const HOUSEHOLD_KEY = "medisync.pwa.household";
-const SETUP_DONE_KEY = "medisync.pwa.setupDone";
-const REQUEST_HISTORY_KEY = "medisync.pwa.requestHistory";
+const BOOKING_KEY = "opd_pwa.booking";
+const HOSPITAL_KEY = "opd_pwa.lastHospital";
 
 function readJson(key, fallback) {
   try {
@@ -15,71 +10,22 @@ function readJson(key, fallback) {
   }
 }
 
-export function loadProfile() {
-  return readJson(PROFILE_KEY, {
-    name: "",
-    phone: "",
-    age: "",
-    gender: "male"
-  });
+export function loadBooking() {
+  return readJson(BOOKING_KEY, null);
 }
 
-export function saveProfile(profile) {
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-}
-
-export function loadActiveRequest() {
-  return readJson(REQUEST_KEY, null);
-}
-
-export function saveActiveRequest(request) {
-  if (!request) {
-    localStorage.removeItem(REQUEST_KEY);
+export function saveBooking(booking) {
+  if (!booking) {
+    localStorage.removeItem(BOOKING_KEY);
     return;
   }
-  localStorage.setItem(REQUEST_KEY, JSON.stringify(request));
+  localStorage.setItem(BOOKING_KEY, JSON.stringify(booking));
 }
 
-export function loadQueue() {
-  return readJson(QUEUE_KEY, []);
+export function loadLastHospital() {
+  return readJson(HOSPITAL_KEY, null);
 }
 
-export function saveQueue(items) {
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(items));
-}
-
-export function loadAuthSession() {
-  return readJson(AUTH_KEY, {
-    verified: false,
-    phone: "",
-    verifiedAt: null
-  });
-}
-
-export function saveAuthSession(auth) {
-  localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
-}
-
-export function loadHousehold() {
-  return readJson(HOUSEHOLD_KEY, []);
-}
-
-export function saveHousehold(items) {
-  localStorage.setItem(HOUSEHOLD_KEY, JSON.stringify(items));
-}
-
-export function loadSetupDone() {
-  return readJson(SETUP_DONE_KEY, false);
-}
-
-export function saveSetupDone(done) {
-  localStorage.setItem(SETUP_DONE_KEY, JSON.stringify(Boolean(done)));
-}
-
-export function loadRequestHistory() {
-  return readJson(REQUEST_HISTORY_KEY, []);
-}
-
-export function saveRequestHistory(items) {
-  localStorage.setItem(REQUEST_HISTORY_KEY, JSON.stringify(items));
+export function saveLastHospital(hospital) {
+  localStorage.setItem(HOSPITAL_KEY, JSON.stringify(hospital));
 }

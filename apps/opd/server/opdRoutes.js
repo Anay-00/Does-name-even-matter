@@ -158,3 +158,29 @@ router.get("/display/:hospitalId", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+/* ── Patient portal (no auth — public self-service) ──────────────── */
+
+router.post("/patient/tokens", async (req, res) => {
+  try {
+    const { hospitalId, patientName, patientMobile, symptomCategory } = req.body;
+    if (!hospitalId) return res.status(400).json({ error: "hospitalId is required" });
+    const result = await service.issueToken({ hospitalId, patientName, patientMobile, symptomCategory });
+    broadcastQueueUpdate(hospitalId, result.doctor.id, "token_issued", {
+      token: result.token,
+      doctor: result.doctor,
+      department: result.department,
+    });
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get("/patient/tokens/:id", async (req, res) => {
+  try {
+    res.json(await service.getPatientTokenStatus(req.params.id));
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
+});

@@ -16,7 +16,7 @@ export const env = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
   JWT_SECRET: process.env.JWT_SECRET || "dev-secret",
   NODE_ENV: process.env.NODE_ENV || "development",
-  CORS_ORIGIN: process.env.CORS_ORIGIN || "",
+  CORS_ORIGIN: (process.env.CORS_ORIGIN || "").trim().replace(/\/+$/, ""),
 };
 
 export const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {

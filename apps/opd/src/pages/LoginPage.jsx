@@ -1,90 +1,34 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { api } from "../lib/api";
 
-const HOSPITALS = [
-  { code: "IND-AITR-01", name: "AitriCare Hospital", short: "aitri", icon: "🫀", color: "#e8523f" },
-  { code: "IND-AURO-02", name: "Aurobindo Hospital", short: "auro", icon: "🧬", color: "#7c3aed" },
-  { code: "IND-VIJAY-03", name: "VijayCare Hospital", short: "vijay", icon: "🩻", color: "#1a73e8" },
-  { code: "IND-PALASIA-04", name: "PalasiaCare Hospital", short: "palasia", icon: "💊", color: "#0f9d58" },
-  { code: "IND-BHAWAR-05", name: "BhawarLife Hospital", short: "bhawar", icon: "🏥", color: "#f4b400" },
-];
-
-const DEPT_LABELS = {
-  CARD: "Cardiology",
-  ORTH: "Orthopedics",
-  NEUR: "Neurology",
-  PEDI: "Pediatrics",
-  GENM: "General Medicine",
+const HOSPITAL_LABELS = {
+  "IND-AITR-01":    "AitriCare Hospital",
+  "IND-AURO-02":    "Aurobindo Hospital",
+  "IND-VIJAY-03":   "VijayCare Hospital",
+  "IND-PALASIA-04": "PalasiaCare Hospital",
+  "IND-BHAWAR-05":  "BhawarLife Hospital",
 };
 
-const DEPT_ICONS = { CARD: "❤️", ORTH: "🦴", NEUR: "🧠", PEDI: "👶", GENM: "🩺" };
-
-const PASSWORD = "OPD@2026";
-
 export default function LoginPage({ onLogin }) {
-  const [step, setStep] = useState(1); // 1: hospital, 2: role, 3: dept select, 4: doctor select
-  const [hospital, setHospital] = useState(null);
-  const [role, setRole] = useState("");
-  const [selectedDept, setSelectedDept] = useState(null);
-  const [loginOptions, setLoginOptions] = useState(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail]       = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+  const [showHints, setShowHints] = useState(false);
 
-  // Fetch login options (doctor list) once
-  useEffect(() => {
-    api.getLoginOptions().then(setLoginOptions).catch(() => {});
-  }, []);
-
-  function reset() {
-    setStep(1);
-    setHospital(null);
-    setRole("");
-    setSelectedDept(null);
-    setError("");
-  }
-
-  function selectHospital(h) {
-    setHospital(h);
-    setError("");
-    setStep(2);
-  }
-
-  function selectRole(r) {
-    setRole(r);
-    setError("");
-    if (r === "receptionist") {
-      doLogin(`rec.${hospital.short}@medisync.com`);
-    } else {
-      setStep(3);
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) {
+      setError("Please enter your email and password.");
+      return;
     }
-  }
-
-  function selectDept(deptCode) {
-    setSelectedDept(deptCode);
-    setError("");
-    setStep(4);
-  }
-
-  function selectDoctor(email) {
-    doLogin(email);
-  }
-
-  // Get doctors for current hospital + dept from login options
-  function getDoctorsForDept(deptCode) {
-    if (!loginOptions || !hospital) return [];
-    const hOpts = loginOptions.find((o) => o.code === hospital.code);
-    if (!hOpts) return [];
-    return hOpts.doctors.filter((d) => d.deptCode === deptCode);
-  }
-
-  async function doLogin(email) {
     setLoading(true);
     setError("");
     try {
-      const result = await api.login({ email, password: PASSWORD });
+      const result = await api.login({ email: email.trim().toLowerCase(), password });
       onLogin(result);
     } catch (err) {
-      setError(err.message || "Login failed");
+      setError(err.message || "Invalid credentials. Please try again.");
       setLoading(false);
     }
   }
@@ -112,120 +56,111 @@ export default function LoginPage({ onLogin }) {
       <div className="login-form-panel">
         <div className="login-card">
           <div className="login-body">
+            <h3 className="login-step-title">Welcome Back</h3>
+            <p className="login-step-subtitle">Sign in to your account to continue</p>
+
             {error && <div className="login-error">{error}</div>}
 
-            {/* Step 1: Select Hospital */}
-            {step === 1 && (
-              <div className="login-step">
-                <h3 className="login-step-title">Welcome Back</h3>
-                <p className="login-step-subtitle">Select your hospital to get started</p>
-                <div className="hospital-grid">
-                  {HOSPITALS.map((h) => (
-                    <button
-                      key={h.code}
-                      className="hospital-card"
-                      onClick={() => selectHospital(h)}
-                    >
-                      <span className="hospital-icon-circle" style={{ background: h.color + "18", color: h.color }}>{h.icon}</span>
-                      <div className="hospital-text">
-                        <span className="hospital-name">{h.name}</span>
-                        <span className="hospital-code">{h.code}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                <div className="login-quick-links">
-                  <a href="/display" className="login-quick-link">
-                    <span>📺</span> Patient Display Board
-                  </a>
-                  <a href="/dashboard" className="login-quick-link">
-                    <span>📊</span> Analytics Dashboard
-                  </a>
-                </div>
+            <form onSubmit={handleSubmit} autoComplete="on">
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <input
+                  className="form-input"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@medisync.com"
+                  autoComplete="username"
+                  autoFocus
+                  required
+                />
               </div>
-            )}
 
-            {/* Step 2: Select Role */}
-            {step === 2 && (
-              <div className="login-step">
-                <button className="back-btn" onClick={reset}>← Back</button>
-                <h3 className="login-step-title">{hospital.name}</h3>
-                <p className="login-step-subtitle">Select your role</p>
-                <div className="role-grid">
-                  <button
-                    className="role-card role-reception"
-                    onClick={() => selectRole("receptionist")}
-                    disabled={loading}
-                  >
-                    <span className="role-icon-circle" style={{background: "var(--primary-light)", color: "var(--primary)"}}>📋</span>
-                    <span className="role-title">Reception</span>
-                    <span className="role-desc">Register patients & issue tokens</span>
-                  </button>
-                  <button
-                    className="role-card role-doctor"
-                    onClick={() => selectRole("doctor")}
-                    disabled={loading}
-                  >
-                    <span className="role-icon-circle" style={{background: "var(--success-light)", color: "var(--success)"}}>🩺</span>
-                    <span className="role-title">Doctor</span>
-                    <span className="role-desc">Manage consultations</span>
-                  </button>
-                </div>
-                {loading && <p className="login-loading">Signing in...</p>}
+              <div className="form-group" style={{ marginTop: 16 }}>
+                <label className="form-label">Password</label>
+                <input
+                  className="form-input"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  required
+                />
               </div>
-            )}
 
-            {/* Step 3: Select Department */}
-            {step === 3 && (
-              <div className="login-step">
-                <button className="back-btn" onClick={() => setStep(2)}>← Back</button>
-                <h3 className="login-step-title">{hospital.name}</h3>
-                <p className="login-step-subtitle">Select your department</p>
-                <div className="doctor-grid">
-                  {Object.entries(DEPT_LABELS).map(([code, label]) => (
-                    <button
-                      key={code}
-                      className={`doctor-card ${selectedDept === code ? "selected" : ""}`}
-                      onClick={() => selectDept(code)}
-                      disabled={loading}
-                    >
-                      <span className="doctor-dept-icon">{DEPT_ICONS[code]}</span>
-                      <span className="doctor-dept">{label}</span>
-                      <span className="doctor-count">{getDoctorsForDept(code).length} doctors</span>
-                    </button>
-                  ))}
-                </div>
-                {loading && <p className="login-loading">Signing in...</p>}
-              </div>
-            )}
+              <button
+                className="btn btn-primary btn-lg w-full"
+                type="submit"
+                disabled={loading}
+                style={{ marginTop: 24 }}
+              >
+                {loading ? "Signing in..." : "Sign In"}
+              </button>
+            </form>
 
-            {/* Step 4: Select Doctor within Department */}
-            {step === 4 && (
-              <div className="login-step">
-                <button className="back-btn" onClick={() => { setStep(3); setSelectedDept(null); }}>← Back</button>
-                <h3 className="login-step-title">{DEPT_LABELS[selectedDept]}</h3>
-                <p className="login-step-subtitle">Select your profile</p>
-                <div className="doctor-grid">
-                  {getDoctorsForDept(selectedDept).map((doc) => (
-                    <button
-                      key={doc.email}
-                      className="doctor-card"
-                      onClick={() => selectDoctor(doc.email)}
-                      disabled={loading}
-                    >
-                      <span className="doctor-dept-icon">{DEPT_ICONS[selectedDept]}</span>
-                      <span className="doctor-name-label">{doc.name}</span>
-                      <span className="doctor-qual">{doc.qualification}</span>
-                      <span className="doctor-room">Room {doc.room}</span>
-                    </button>
-                  ))}
+            {/* Credential hints (collapsible) */}
+            <div className="login-hints">
+              <button
+                className="login-hints-toggle"
+                type="button"
+                onClick={() => setShowHints((v) => !v)}
+              >
+                {showHints ? "▲" : "▼"} Staff credential reference
+              </button>
+              {showHints && (
+                <div className="login-hints-body">
+                  <p className="login-hints-note">Password for all accounts: <code>OPD@2026</code></p>
+                  <table className="login-hints-table">
+                    <thead>
+                      <tr><th>Hospital</th><th>Role</th><th>Email format</th></tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        ["Aurobindo",  "Reception", "rec.auro@medisync.com"],
+                        ["Aurobindo",  "Doctor (Cardiology #1)", "dr.card.auro@medisync.com"],
+                        ["Aurobindo",  "Doctor (Cardiology #2)", "dr.card2.auro@medisync.com"],
+                        ["AitriCare",  "Reception", "rec.aitri@medisync.com"],
+                        ["VijayCare",  "Reception", "rec.vijay@medisync.com"],
+                        ["PalasiaCare","Reception", "rec.palasia@medisync.com"],
+                        ["BhawarLife", "Reception", "rec.bhawar@medisync.com"],
+                      ].map(([hosp, role, email]) => (
+                        <tr key={email}>
+                          <td>{hosp}</td>
+                          <td>{role}</td>
+                          <td>
+                            <button
+                              type="button"
+                              className="login-hints-fill"
+                              onClick={() => { setEmail(email); setPassword("OPD@2026"); }}
+                            >
+                              {email}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p className="login-hints-note" style={{marginTop:8}}>
+                    Doctor email pattern: <code>dr.&#123;deptcode&#125;&#123;N&#125;.&#123;hospital&#125;@medisync.com</code><br/>
+                    Dept codes: card, orth, neur, pedi, genm &nbsp;|&nbsp; N = 2 or 3 for 2nd/3rd doctor
+                  </p>
                 </div>
-                {loading && <p className="login-loading">Signing in...</p>}
-              </div>
-            )}
+              )}
+            </div>
+
+            <div className="login-quick-links">
+              <a href="/display" className="login-quick-link">
+                <span>📺</span> Display Board
+              </a>
+              <a href="/dashboard" className="login-quick-link">
+                <span>📊</span> Analytics
+              </a>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
+

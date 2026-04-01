@@ -610,7 +610,7 @@ body {
 /* Left branding panel */
 .login-brand-panel {
   width: 420px;
-  background: linear-gradient(160deg, var(--accent) 0%, #c73e2d 100%);
+  background: linear-gradient(160deg, #0f9d58 0%, #0b7a42 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -760,12 +760,13 @@ body {
 }
 
 .login-error {
-  background: var(--danger-light);
-  color: var(--danger);
+  background: var(--warning-light);
+  color: #92400e;
+  border: 1px solid #fcd34d;
   padding: 10px 14px;
   border-radius: var(--radius-xs);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   margin-bottom: 16px;
 }
 
@@ -843,6 +844,93 @@ body {
   50% { opacity: 0.5; }
 }
 
+/* ── Credential hints ───────────────────────────────────────────── */
+
+.login-hints {
+  margin-top: 20px;
+}
+
+.login-hints-toggle {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.15s;
+}
+
+.login-hints-toggle:hover {
+  color: var(--text-secondary);
+}
+
+.login-hints-body {
+  margin-top: 10px;
+  padding: 14px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  animation: fadeInUp 0.2s ease;
+}
+
+.login-hints-note {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.login-hints-note code {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  background: var(--border-light);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.login-hints-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.login-hints-table th {
+  text-align: left;
+  padding: 4px 8px;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.login-hints-table td {
+  padding: 5px 8px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+}
+
+.login-hints-fill {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 11px;
+  color: var(--primary);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.login-hints-fill:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+
 .login-quick-links {
   display: flex;
   gap: 12px;
@@ -869,9 +957,9 @@ body {
 }
 
 .login-quick-link:hover {
-  background: var(--accent-light);
-  border-color: var(--accent);
-  color: var(--accent);
+  background: var(--success-light);
+  border-color: var(--success);
+  color: var(--success);
 }
 
 /* ── Hospital grid (login) ──────────────────────────────────────── */

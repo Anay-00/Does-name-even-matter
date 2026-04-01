@@ -51,7 +51,6 @@ async function request(path, options = {}) {
 
 export const api = {
   // Auth
-  getLoginOptions: () => request("/auth/options"),
   login: (data) => request("/auth/login", { method: "POST", body: JSON.stringify(data) }),
 
   // Lookup

@@ -5,11 +5,11 @@ const ACCESS_TOKEN_TTL = 60 * 60 * 12; // 12 hours
 
 /* ── Hospitals ──────────────────────────────────────────────────── */
 const HOSPITALS = [
-  { code: "IND-AITR-01",    short: "aitri"   },
-  { code: "IND-AURO-02",    short: "auro"    },
-  { code: "IND-VIJAY-03",   short: "vijay"   },
-  { code: "IND-PALASIA-04", short: "palasia" },
-  { code: "IND-BHAWAR-05",  short: "bhawar"  },
+  { code: "IND-AITR-01",    short: "aitri",   name: "AitriCare Hospital"  },
+  { code: "IND-AURO-02",    short: "auro",    name: "Aurobindo Hospital"  },
+  { code: "IND-VIJAY-03",   short: "vijay",   name: "VijayCare Hospital"  },
+  { code: "IND-PALASIA-04", short: "palasia", name: "PalasiaCare Hospital" },
+  { code: "IND-BHAWAR-05",  short: "bhawar",  name: "BhawarLife Hospital" },
 ];
 
 /* ── Doctor roster — 3 per specialty per hospital ───────────────── */
@@ -162,6 +162,12 @@ export function verifyToken(token) {
   return parsed;
 }
 
+/* ── Dept name map (fallback when Supabase rows are missing) ───── */
+const DEPT_NAMES = {
+  CARD: "Cardiology", ORTH: "Orthopedics",
+  NEUR: "Neurology",  PEDI: "Pediatrics", GENM: "General Medicine",
+};
+
 /* ── Login ──────────────────────────────────────────────────────── */
 export async function login(email, password) {
   const user = opdUsers.find(
@@ -169,46 +175,60 @@ export async function login(email, password) {
   );
   if (!user) return null;
 
+  // Try Supabase, fall back to roster data so login never fails due to missing DB rows
   const { data: hospital } = await supabase
     .from("hospitals")
     .select("id, name, code")
     .eq("code", user.hospitalCode)
-    .eq("is_active", true)
-    .single();
-  if (!hospital) return null;
+    .maybeSingle();
+
+  const rosterHospital = HOSPITALS.find((h) => h.code === user.hospitalCode);
+  const resolvedHospital = hospital || {
+    id: `local_${user.hospitalCode}`,
+    name: rosterHospital?.name || user.hospitalCode,
+    code: user.hospitalCode,
+  };
 
   const tokenPayload = {
     id: user.id,
     role: user.role,
     email: user.email,
-    hospitalId: hospital.id,
-    hospitalName: hospital.name,
-    hospitalCode: hospital.code,
+    hospitalId: resolvedHospital.id,
+    hospitalName: resolvedHospital.name,
+    hospitalCode: resolvedHospital.code,
   };
 
-  // For doctors, attach department + doctor DB info
+  // For doctors, attach department + doctor DB info (with fallback)
   if (user.role === "doctor") {
-    const { data: dept } = await supabase
-      .from("opd_departments")
-      .select("id, code, name")
-      .eq("hospital_id", hospital.id)
-      .eq("code", user.deptCode)
-      .single();
+    const { data: dept } = hospital
+      ? await supabase
+          .from("opd_departments")
+          .select("id, code, name")
+          .eq("hospital_id", hospital.id)
+          .eq("code", user.deptCode)
+          .maybeSingle()
+      : { data: null };
 
-    // Match doctor by department + room number (unique per hospital)
-    const { data: doc } = await supabase
-      .from("opd_doctors")
-      .select("id, name, room_number")
-      .eq("department_id", dept?.id)
-      .eq("room_number", user.doctorRoom)
-      .maybeSingle();
+    const { data: doc } = dept
+      ? await supabase
+          .from("opd_doctors")
+          .select("id, name, room_number")
+          .eq("department_id", dept.id)
+          .eq("room_number", user.doctorRoom)
+          .maybeSingle()
+      : { data: null };
 
-    tokenPayload.departmentId = dept?.id;
-    tokenPayload.departmentCode = dept?.code;
-    tokenPayload.departmentName = dept?.name;
-    tokenPayload.doctorId = doc?.id;
-    tokenPayload.doctorName = doc?.name || user.doctorName;
-    tokenPayload.roomNumber = doc?.room_number || user.doctorRoom;
+    // Fallback to in-memory roster values when DB rows don't exist yet
+    const rosterDoc = DOCTOR_ROSTER[user.hospitalCode]?.find(
+      (d) => d.deptCode === user.deptCode && d.room === user.doctorRoom
+    );
+
+    tokenPayload.departmentId   = dept?.id   || `local_${user.deptCode}_${user.hospitalCode}`;
+    tokenPayload.departmentCode = dept?.code || user.deptCode;
+    tokenPayload.departmentName = dept?.name || DEPT_NAMES[user.deptCode] || user.deptCode;
+    tokenPayload.doctorId       = doc?.id    || `local_${user.id}`;
+    tokenPayload.doctorName     = doc?.name  || rosterDoc?.name || user.doctorName;
+    tokenPayload.roomNumber     = doc?.room_number || rosterDoc?.room || user.doctorRoom;
   }
 
   return { token: signToken(tokenPayload), user: tokenPayload };

@@ -9,11 +9,11 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["icon-192.svg", "icon-512.svg", "apple-touch-icon.svg"],
       manifest: {
-        name: "MediSync SOS",
-        short_name: "MediSync SOS",
-        description: "One-tap emergency request for faster ambulance dispatch.",
-        theme_color: "#0d1f2d",
-        background_color: "#f5f7f8",
+        name: "MediSync OPD",
+        short_name: "MediSync OPD",
+        description: "Book your OPD token remotely — skip the reception queue.",
+        theme_color: "#2563eb",
+        background_color: "#f0f4ff",
         display: "standalone",
         orientation: "portrait",
         start_url: "/",
@@ -57,7 +57,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: process.env.VITE_BACKEND_ORIGIN || "http://localhost:8080",
+        target: process.env.VITE_API_URL || "http://localhost:3900",
         changeOrigin: true
       }
     }

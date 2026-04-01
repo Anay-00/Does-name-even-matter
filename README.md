@@ -388,6 +388,6 @@ Every time a doctor marks a consultation complete, the server recalculates ETAs 
 
 <div align="center">
 
-**Brand color:** `#e8523f` &nbsp;|&nbsp; **Font:** Inter &nbsp;|&nbsp; Built for Hack-a-Sprint
+Built for Hack-a-Sprint
 
 </div>

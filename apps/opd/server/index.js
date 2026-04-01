@@ -16,7 +16,7 @@ const server = http.createServer(app);
 initSocket(server);
 
 app.use(helmet());
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ origin: env.CORS_ORIGIN || true, credentials: true }));
 app.use(compression());
 app.use(express.json());
 app.use(morgan("dev"));

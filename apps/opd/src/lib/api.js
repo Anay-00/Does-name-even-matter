@@ -1,4 +1,4 @@
-const BASE = "/api";
+const BASE = `${import.meta.env.VITE_API_URL || ""}/api`;
 
 /* ── In-memory token cache (avoids localStorage race on first login) ── */
 let _token = null;

@@ -6,6 +6,7 @@ import compression from "compression";
 import morgan from "morgan";
 import { env } from "./config.js";
 import { router } from "./opdRoutes.js";
+import { analyticsRouter } from "./analyticsRoutes.js";
 import { initSocket } from "./socketManager.js";
 
 const app = express();
@@ -25,6 +26,7 @@ app.get("/", (_req, res) => {
 });
 
 app.use("/api", router);
+app.use("/api/analytics", analyticsRouter);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

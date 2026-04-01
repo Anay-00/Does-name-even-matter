@@ -119,6 +119,9 @@ export default function LoginPage({ onLogin }) {
               <div className="login-footer-link">
                 <a href="/display">Open Patient Display Board →</a>
               </div>
+              <div className="login-footer-link">
+                <a href="/dashboard">📊 Open Analytics Dashboard →</a>
+              </div>
             </div>
           )}
 

@@ -4,6 +4,7 @@ import LoginPage from "./pages/LoginPage";
 import ReceptionPage from "./pages/ReceptionPage";
 import DoctorPage from "./pages/DoctorPage";
 import DisplayPage from "./pages/DisplayPage";
+import DashboardPage from "./pages/DashboardPage";
 import { connectSocket, disconnectSocket, joinDoctor, joinReception, joinHospital } from "./lib/socket";
 import { getStoredAuth, setToken, clearToken } from "./lib/api";
 
@@ -74,6 +75,7 @@ export default function App() {
       } />
       <Route path="/display" element={<DisplayPage />} />
       <Route path="/display/:hospitalId" element={<DisplayPage />} />
+      <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
